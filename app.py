@@ -76,7 +76,7 @@ def upload_file():
     file.save(filepath)
     
     try:
-        # Process through unified agent (faster single call)
+        # #Process through unified agent (faster single call)
         result = process_architecture_diagram(filepath, environment)
         
         # Check if there was a validation error
