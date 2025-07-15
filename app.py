@@ -13,7 +13,7 @@ from utils.performance import perf_monitor
 app = Flask(__name__)
 app.config.from_object(config)
 
-# Singleton instances for performance (lazy loading)
+## Singleton instances for performance (lazy loading)
 _arch_analyzer = None
 _policy_checker = None
 _bicep_generator = None
