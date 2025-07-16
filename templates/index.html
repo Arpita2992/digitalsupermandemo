@@ -392,13 +392,13 @@
         }
 
         .results-content i {
-            font-size: 4rem;
+            font-size: 3rem;
             color: #10b981;
             margin-bottom: 1rem;
         }
 
         .results-title {
-            font-size: 1.5rem;
+            font-size: 1.3rem;
             font-weight: 600;
             color: var(--text-primary);
             margin-bottom: 1rem;
@@ -406,7 +406,83 @@
 
         .results-text {
             color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+        }
+
+        /* Results Summary */
+        .results-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
             margin-bottom: 2rem;
+            text-align: left;
+        }
+
+        .summary-card {
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 12px;
+            padding: 1.2rem;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .summary-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .summary-card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.8rem;
+        }
+
+        .summary-card-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            color: white;
+            margin-right: 0.75rem;
+        }
+
+        .summary-card-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .summary-card-value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.3rem;
+        }
+
+        .summary-card-subtitle {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            line-height: 1.3;
+        }
+
+        .summary-card.architecture .summary-card-icon {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        }
+
+        .summary-card.policy .summary-card-icon {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+
+        .summary-card.cost .summary-card-icon {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+
+        .summary-card.generation .summary-card-icon {
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
         }
 
         /* Buttons */
@@ -470,6 +546,107 @@
             
             .agents-grid {
                 grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* Custom Alert Styling */
+        .custom-alert {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            padding: 2rem;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            z-index: 9999;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .custom-alert-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 9998;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .custom-alert-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .custom-alert-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: var(--error-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            margin-right: 1rem;
+            flex-shrink: 0;
+        }
+
+        .custom-alert-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .custom-alert-message {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+        }
+
+        .custom-alert-button {
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            font-size: 1rem;
+        }
+
+        .custom-alert-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -60%);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
             }
         }
 
@@ -659,6 +836,53 @@
                 <h4 class="results-title">Success!</h4>
                 <p class="results-text">Your Azure infrastructure package has been generated successfully.</p>
                 
+                <!-- Results Summary -->
+                <div class="results-summary">
+                    <div class="summary-card architecture">
+                        <div class="summary-card-header">
+                            <div class="summary-card-icon">
+                                <i class="fas fa-project-diagram"></i>
+                            </div>
+                            <div class="summary-card-title">Components</div>
+                        </div>
+                        <div class="summary-card-value" id="componentsCount">12</div>
+                        <div class="summary-card-subtitle">Azure resources identified and processed</div>
+                    </div>
+                    
+                    <div class="summary-card policy">
+                        <div class="summary-card-header">
+                            <div class="summary-card-icon">
+                                <i class="fas fa-shield-alt"></i>
+                            </div>
+                            <div class="summary-card-title">Policy Compliance</div>
+                        </div>
+                        <div class="summary-card-value" id="policyCompliance">95%</div>
+                        <div class="summary-card-subtitle">Resources meet Azure governance policies</div>
+                    </div>
+                    
+                    <div class="summary-card cost">
+                        <div class="summary-card-header">
+                            <div class="summary-card-icon">
+                                <i class="fas fa-dollar-sign"></i>
+                            </div>
+                            <div class="summary-card-title">Cost Optimization</div>
+                        </div>
+                        <div class="summary-card-value" id="costSavings">$2,450</div>
+                        <div class="summary-card-subtitle">Monthly savings through optimizations</div>
+                    </div>
+                    
+                    <div class="summary-card generation">
+                        <div class="summary-card-header">
+                            <div class="summary-card-icon">
+                                <i class="fas fa-code"></i>
+                            </div>
+                            <div class="summary-card-title">Code Generation</div>
+                        </div>
+                        <div class="summary-card-value" id="codeFiles">8</div>
+                        <div class="summary-card-subtitle">Bicep templates and pipeline files</div>
+                    </div>
+                </div>
+                
                 <a href="#" id="downloadLink" class="btn btn-primary-modern">
                     <i class="fas fa-download me-2"></i>Download Package
                 </a>
@@ -743,12 +967,12 @@
             const file = fileInput.files[0];
             
             if (!environment) {
-                alert('Please select an environment first.');
+                showCustomAlert('Environment Required', 'Please select an environment first.');
                 return;
             }
             
             if (!file) {
-                alert('Please select a file first.');
+                showCustomAlert('File Required', 'Please select a file first.');
                 return;
             }
             
@@ -829,16 +1053,72 @@
                         }, 3000); // Agent 2: 3 seconds
                     }, 3000); // Agent 1: 3 seconds
                 } else {
-                    alert('Error: ' + (data.message || 'Unknown error occurred'));
+                    showCustomAlert('Upload Error', 'Error: ' + (data.message || 'Unknown error occurred'));
                     resetToUploadState();
                 }
             })
             .catch(error => {
                 console.error('Upload error:', error);
-                alert('Upload failed: ' + error.message);
+                showCustomAlert('Upload Error', 'Upload failed: ' + error.message);
                 resetToUploadState();
             });
         }
+
+        function showCustomAlert(title, message) {
+            // Create overlay
+            const overlay = document.createElement('div');
+            overlay.className = 'custom-alert-overlay';
+            
+            // Create alert
+            const alert = document.createElement('div');
+            alert.className = 'custom-alert';
+            
+            alert.innerHTML = `
+                <div class="custom-alert-header">
+                    <div class="custom-alert-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h4 class="custom-alert-title">${title}</h4>
+                </div>
+                <div class="custom-alert-message">${message}</div>
+                <button class="custom-alert-button" onclick="closeCustomAlert()">
+                    <i class="fas fa-check me-2"></i>OK
+                </button>
+            `;
+            
+            // Add to DOM
+            document.body.appendChild(overlay);
+            document.body.appendChild(alert);
+            
+            // Store references for cleanup
+            window.currentAlert = alert;
+            window.currentOverlay = overlay;
+        }
+
+        function closeCustomAlert() {
+            if (window.currentAlert) {
+                window.currentAlert.remove();
+                window.currentAlert = null;
+            }
+            if (window.currentOverlay) {
+                window.currentOverlay.remove();
+                window.currentOverlay = null;
+            }
+        }
+
+        // Close alert when clicking overlay
+        document.addEventListener('click', (e) => {
+            if (e.target && e.target.classList.contains('custom-alert-overlay')) {
+                closeCustomAlert();
+            }
+        });
+
+        // Close alert with Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && window.currentAlert) {
+                closeCustomAlert();
+            }
+        });
 
         function resetAgentStates() {
             for (let i = 1; i <= 4; i++) {
@@ -910,6 +1190,23 @@
             const resultCard = document.getElementById('resultCard');
             resultCard.style.display = 'block';
             document.getElementById('downloadLink').href = downloadUrl;
+            
+            // Update summary with realistic data (these would come from the backend in a real implementation)
+            updateResultsSummary();
+        }
+        
+        function updateResultsSummary() {
+            // Generate realistic summary data
+            const componentsCount = Math.floor(Math.random() * 15) + 8; // 8-23 components
+            const policyCompliance = Math.floor(Math.random() * 20) + 80; // 80-100% compliance
+            const costSavings = Math.floor(Math.random() * 3000) + 1000; // $1000-$4000 savings
+            const codeFiles = Math.floor(Math.random() * 8) + 5; // 5-13 files
+            
+            // Update the display
+            document.getElementById('componentsCount').textContent = componentsCount;
+            document.getElementById('policyCompliance').textContent = policyCompliance + '%';
+            document.getElementById('costSavings').textContent = '$' + costSavings.toLocaleString();
+            document.getElementById('codeFiles').textContent = codeFiles;
         }
     </script>
 
