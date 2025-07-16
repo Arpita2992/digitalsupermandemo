@@ -13,3 +13,4 @@ azure-mgmt-authorization==4.0.0
 zipfile36==0.1.3
 python-dotenv==1.0.0
 gunicorn==21.2.0
+psutil==5.9.0

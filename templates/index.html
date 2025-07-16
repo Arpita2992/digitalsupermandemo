@@ -4,657 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Digital Superman - Azure Infrastructure AI</title>
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" as="style">
+    <link rel="preload" href="{{ url_for('static', filename='css/main.css') }}" as="style">
+    <link rel="preload" href="{{ url_for('static', filename='js/main.js') }}" as="script">
+    
+    <!-- Critical CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            --success-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            --warning-gradient: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-            --error-gradient: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-            --glass-bg: rgba(255, 255, 255, 0.1);
-            --glass-border: rgba(255, 255, 255, 0.2);
-            --text-primary: #1a202c;
-            --text-secondary: #718096;
-            --shadow-light: 0 4px 20px rgba(0, 0, 0, 0.1);
-            --shadow-medium: 0 8px 30px rgba(0, 0, 0, 0.15);
-            --border-radius: 16px;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--primary-gradient);
-            color: var(--text-primary);
-            line-height: 1.6;
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
-
-        /* Header */
-        .header {
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--glass-border);
-            padding: 1rem 0;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-        }
-
-        .logo {
-            display: flex;
-            align-items: center;
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: white;
-            text-decoration: none;
-        }
-
-        .logo:hover {
-            color: white;
-        }
-
-        .logo i {
-            color: #fbbf24;
-            margin-right: 0.5rem;
-            font-size: 1.8rem;
-        }
-
-        .status-indicator {
-            background: rgba(16, 185, 129, 0.2);
-            color: #10b981;
-            padding: 0.5rem 1rem;
-            border-radius: 25px;
-            font-size: 0.875rem;
-            font-weight: 600;
-            border: 1px solid rgba(16, 185, 129, 0.3);
-        }
-
-        /* Main Container */
-        .main-container {
-            max-width: 1000px;
-            margin: 0 auto;
-            padding: 2rem 1rem;
-        }
-
-        /* Hero Section */
-        .hero {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-
-        .hero-title {
-            font-size: 2rem;
-            font-weight: 700;
-            color: white;
-            margin-bottom: 0.5rem;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .hero-subtitle {
-            font-size: 1rem;
-            color: rgba(255, 255, 255, 0.8);
-            margin-bottom: 1.5rem;
-        }
-
-        /* Card System */
-        .card-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        @media (max-width: 768px) {
-            .card-container {
-                grid-template-columns: 1fr;
-                gap: 1rem;
-            }
-        }
-
-        .glass-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            border-radius: 12px;
-            padding: 1.5rem;
-            box-shadow: var(--shadow-light);
-            border: 1px solid var(--glass-border);
-            transition: all 0.3s ease;
-        }
-
-        .glass-card:hover {
-            transform: translateY(-3px);
-            box-shadow: var(--shadow-medium);
-        }
-
-        .card-header {
-            display: flex;
-            align-items: center;
-            margin-bottom: 1rem;
-        }
-
-        .card-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-            color: white;
-            margin-right: 0.75rem;
-        }
-
-        .card-title {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin: 0;
-        }
-
-        .card-subtitle {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            margin: 0;
-        }
-
-        /* Upload Section */
-        .upload-icon {
-            background: var(--primary-gradient);
-        }
-
-        .upload-area {
-            border: 2px dashed #cbd5e0;
-            border-radius: 12px;
-            padding: 1.5rem;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            background: rgba(247, 250, 252, 0.5);
-        }
-
-        .upload-area:hover {
-            border-color: #667eea;
-            background: rgba(102, 126, 234, 0.05);
-        }
-
-        .upload-area.dragover {
-            border-color: #667eea;
-            background: rgba(102, 126, 234, 0.1);
-            transform: scale(1.02);
-        }
-
-        .upload-area i {
-            font-size: 2rem;
-            color: #667eea;
-            margin-bottom: 0.5rem;
-        }
-
-        .upload-text {
-            font-size: 1rem;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 0.25rem;
-        }
-
-        .upload-subtext {
-            color: var(--text-secondary);
-            font-size: 0.85rem;
-        }
-
-        .file-selected {
-            background: rgba(16, 185, 129, 0.05) !important;
-            border-color: #10b981 !important;
-        }
-
-        .file-info {
-            background: rgba(16, 185, 129, 0.1);
-            border: 2px solid #10b981;
-            border-radius: 12px;
-            padding: 0.75rem;
-            margin-top: 0.75rem;
-            display: none;
-        }
-
-        /* AI Agents Section */
-        .agents-icon {
-            background: var(--secondary-gradient);
-        }
-
-        .agents-progress {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .agent-progress-item {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-
-        .agent-progress-icon {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.9rem;
-            color: white;
-            flex-shrink: 0;
-            transition: all 0.3s ease;
-        }
-
-        .agent-progress-icon.waiting {
-            background: linear-gradient(135deg, #d1d5db 0%, #9ca3af 100%);
-        }
-
-        .agent-progress-icon.active {
-            background: var(--primary-gradient);
-            animation: pulse 2s infinite;
-        }
-
-        .agent-progress-icon.completed {
-            background: var(--success-gradient);
-        }
-
-        .agent-progress-icon.error {
-            background: var(--error-gradient);
-        }
-
-        .agent-progress-info {
-            flex: 1;
-            min-width: 0;
-        }
-
-        .agent-progress-name {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 0.25rem;
-        }
-
-        .agent-progress-bar {
-            height: 6px;
-            background: #e5e7eb;
-            border-radius: 3px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .agent-progress-fill {
-            height: 100%;
-            border-radius: 3px;
-            width: 0%;
-            transition: width 0.8s ease;
-        }
-
-        .agent-progress-fill.waiting {
-            background: linear-gradient(90deg, #d1d5db 0%, #9ca3af 100%);
-        }
-
-        .agent-progress-fill.active {
-            background: var(--primary-gradient);
-        }
-
-        .agent-progress-fill.completed {
-            background: var(--success-gradient);
-        }
-
-        .agent-progress-fill.error {
-            background: var(--error-gradient);
-        }
-
-        .agent-progress-percentage {
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: var(--text-secondary);
-            min-width: 30px;
-            text-align: right;
-        }
-
-        /* Progress Section */
-        .progress-container {
-            background: rgba(255, 255, 255, 0.8);
-            border-radius: 12px;
-            padding: 1rem;
-            margin-top: 1rem;
-        }
-
-        .progress-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.75rem;
-        }
-
-        .progress-title {
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: var(--text-primary);
-        }
-
-        .progress-badge {
-            background: var(--primary-gradient);
-            color: white;
-            padding: 0.2rem 0.5rem;
-            border-radius: 15px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-
-        .progress-bar {
-            height: 6px;
-            background: #e5e7eb;
-            border-radius: 10px;
-            overflow: hidden;
-            position: relative;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: var(--primary-gradient);
-            border-radius: 10px;
-            width: 0%;
-            transition: width 0.8s ease;
-        }
-
-        .progress-fill.active::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-            animation: shimmer 2s infinite;
-        }
-
-        /* Results Section */
-        .results-card {
-            grid-column: 1 / -1;
-            text-align: center;
-            display: none;
-        }
-
-        .results-icon {
-            background: var(--success-gradient);
-        }
-
-        .results-content i {
-            font-size: 3rem;
-            color: #10b981;
-            margin-bottom: 1rem;
-        }
-
-        .results-title {
-            font-size: 1.3rem;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: 1rem;
-        }
-
-        .results-text {
-            color: var(--text-secondary);
-            margin-bottom: 1.5rem;
-        }
-
-        /* Results Summary */
-        .results-summary {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-bottom: 2rem;
-            text-align: left;
-        }
-
-        .summary-card {
-            background: rgba(255, 255, 255, 0.7);
-            border-radius: 12px;
-            padding: 1.2rem;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            transition: all 0.3s ease;
-        }
-
-        .summary-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        }
-
-        .summary-card-header {
-            display: flex;
-            align-items: center;
-            margin-bottom: 0.8rem;
-        }
-
-        .summary-card-icon {
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1rem;
-            color: white;
-            margin-right: 0.75rem;
-        }
-
-        .summary-card-title {
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin: 0;
-        }
-
-        .summary-card-value {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: var(--text-primary);
-            margin-bottom: 0.3rem;
-        }
-
-        .summary-card-subtitle {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            line-height: 1.3;
-        }
-
-        .summary-card.architecture .summary-card-icon {
-            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-        }
-
-        .summary-card.policy .summary-card-icon {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        }
-
-        .summary-card.cost .summary-card-icon {
-            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-        }
-
-        .summary-card.generation .summary-card-icon {
-            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-        }
-
-        /* Buttons */
-        .btn-primary-modern {
-            background: var(--primary-gradient);
-            border: none;
-            border-radius: 12px;
-            padding: 0.6rem 1.5rem;
-            font-weight: 600;
-            color: white;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-        }
-
-        .btn-primary-modern:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-            color: white;
-        }
-
-        .btn-outline-modern {
-            background: transparent;
-            border: 2px solid #667eea;
-            color: #667eea;
-            border-radius: 12px;
-            padding: 0.4rem 0.8rem;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-        .btn-outline-modern:hover {
-            background: var(--primary-gradient);
-            border-color: transparent;
-            color: white;
-        }
-
-        /* Animations */
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-        }
-
-        @keyframes shimmer {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
-        }
-
-        /* Responsive Design */
-        @media (max-width: 768px) {
-            .hero-title {
-                font-size: 2rem;
-            }
-            
-            .hero-subtitle {
-                font-size: 1rem;
-            }
-            
-            .main-container {
-                padding: 2rem 1rem;
-            }
-            
-            .agents-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-
-        /* Custom Alert Styling */
-        .custom-alert {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(255, 255, 255, 0.98);
-            backdrop-filter: blur(20px);
-            border-radius: 16px;
-            padding: 2rem;
-            max-width: 400px;
-            width: 90%;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            z-index: 9999;
-            animation: slideIn 0.3s ease-out;
-        }
-
-        .custom-alert-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(4px);
-            z-index: 9998;
-            animation: fadeIn 0.3s ease-out;
-        }
-
-        .custom-alert-header {
-            display: flex;
-            align-items: center;
-            margin-bottom: 1rem;
-        }
-
-        .custom-alert-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
-            background: var(--error-gradient);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 1.5rem;
-            margin-right: 1rem;
-            flex-shrink: 0;
-        }
-
-        .custom-alert-title {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin: 0;
-        }
-
-        .custom-alert-message {
-            color: var(--text-secondary);
-            line-height: 1.6;
-            margin-bottom: 1.5rem;
-        }
-
-        .custom-alert-button {
-            background: var(--primary-gradient);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            padding: 0.75rem 2rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            width: 100%;
-            font-size: 1rem;
-        }
-
-        .custom-alert-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
-        }
-
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translate(-50%, -60%);
-            }
-            to {
-                opacity: 1;
-                transform: translate(-50%, -50%);
-            }
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-            to {
-                opacity: 1;
-            }
-        }
-
-        /* Utilities */
-        .full-width {
-            grid-column: 1 / -1;
-        }
-    </style>
+    <link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet">
+    
+    <!-- Performance optimizations -->
+    <meta name="theme-color" content="#667eea">
+    <meta name="format-detection" content="telephone=no">
 </head>
 <body>
     <!-- Header -->
@@ -674,18 +38,18 @@
     </header>
 
     <!-- Main Content -->
-    <div class="main-container">
+    <main class="main-container">
         <!-- Hero Section -->
-        <div class="hero">
+        <section class="hero">
             <h1 class="hero-title">AI-Powered Azure Infrastructure</h1>
             <p class="hero-subtitle">Transform your architecture diagrams into production-ready Bicep templates</p>
-        </div>
+        </section>
 
         <!-- Main Grid -->
         <div class="card-container">
             <!-- Upload Section -->
-            <div class="glass-card">
-                <div class="card-header">
+            <section class="glass-card">
+                <header class="card-header">
                     <div class="card-icon upload-icon">
                         <i class="fas fa-cloud-upload-alt"></i>
                     </div>
@@ -693,11 +57,11 @@
                         <h3 class="card-title">Upload Architecture</h3>
                         <p class="card-subtitle">Transform diagrams into infrastructure code</p>
                     </div>
-                </div>
+                </header>
                 
                 <form id="uploadForm" enctype="multipart/form-data">
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">Environment</label>
+                        <label for="environment" class="form-label fw-semibold">Environment</label>
                         <select class="form-select" id="environment" name="environment" required>
                             <option value="">Choose environment...</option>
                             <option value="development">Development</option>
@@ -734,11 +98,11 @@
                         </button>
                     </div>
                 </form>
-            </div>
+            </section>
 
             <!-- AI Agents Section -->
-            <div class="glass-card">
-                <div class="card-header">
+            <section class="glass-card">
+                <header class="card-header">
                     <div class="card-icon agents-icon">
                         <i class="fas fa-robot"></i>
                     </div>
@@ -746,7 +110,7 @@
                         <h3 class="card-title">AI Agents</h3>
                         <p class="card-subtitle">Intelligent processing pipeline</p>
                     </div>
-                </div>
+                </header>
                 
                 <div class="agents-progress">
                     <!-- Agent 1: Architecture Analyzer -->
@@ -816,12 +180,12 @@
                         <div class="progress-fill" id="overallProgress"></div>
                     </div>
                 </div>
-            </div>
+            </section>
         </div>
 
         <!-- Results Section -->
-        <div class="glass-card results-card" id="resultCard">
-            <div class="card-header">
+        <section class="glass-card results-card" id="resultCard">
+            <header class="card-header">
                 <div class="card-icon results-icon">
                     <i class="fas fa-check-circle"></i>
                 </div>
@@ -829,7 +193,7 @@
                     <h3 class="card-title">Processing Complete</h3>
                     <p class="card-subtitle">Your infrastructure code is ready</p>
                 </div>
-            </div>
+            </header>
             
             <div class="results-content">
                 <i class="fas fa-check-circle"></i>
@@ -887,10 +251,10 @@
                     <i class="fas fa-download me-2"></i>Download Package
                 </a>
             </div>
-        </div>
+        </section>
 
         <!-- Sample Files Section -->
-        <div class="text-center">
+        <section class="text-center">
             <h5 class="text-white mb-3">
                 <i class="fas fa-star text-warning me-2"></i>
                 Sample Files
@@ -911,304 +275,11 @@
                     <i class="fas fa-file-alt me-1"></i>Description (.txt)
                 </a>
             </div>
-        </div>
-    </div>
+        </section>
+    </main>
 
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // File upload functionality
-        const uploadArea = document.getElementById('uploadArea');
-        const fileInput = document.getElementById('fileInput');
-        const uploadForm = document.getElementById('uploadForm');
-        const fileInfo = document.getElementById('fileInfo');
-        const uploadBtnContainer = document.getElementById('uploadBtnContainer');
-        const removeFileBtn = document.getElementById('removeFile');
-        
-        let selectedFile = null;
-
-        // Click to upload
-        uploadArea.addEventListener('click', () => fileInput.click());
-
-        // Drag and drop
-        uploadArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            uploadArea.classList.add('dragover');
-        });
-
-        uploadArea.addEventListener('dragleave', () => {
-            uploadArea.classList.remove('dragover');
-        });
-
-        uploadArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            uploadArea.classList.remove('dragover');
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                fileInput.files = files;
-                showFileInfo(files[0]);
-            }
-        });
-
-        fileInput.addEventListener('change', (e) => {
-            if (e.target.files.length > 0) {
-                showFileInfo(e.target.files[0]);
-            }
-        });
-
-        // Remove file button
-        removeFileBtn.addEventListener('click', () => {
-            clearFileSelection();
-        });
-
-        // Form submission
-        uploadForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const environment = document.getElementById('environment').value;
-            const file = fileInput.files[0];
-            
-            if (!environment) {
-                showCustomAlert('Environment Required', 'Please select an environment first.');
-                return;
-            }
-            
-            if (!file) {
-                showCustomAlert('File Required', 'Please select a file first.');
-                return;
-            }
-            
-            handleFileUpload(file, environment);
-        });
-
-        function showFileInfo(file) {
-            selectedFile = file;
-            
-            // Update upload area appearance
-            uploadArea.classList.add('file-selected');
-            
-            // Show file info
-            document.getElementById('fileName').textContent = file.name;
-            document.getElementById('fileSize').textContent = `${(file.size / 1024 / 1024).toFixed(2)} MB`;
-            fileInfo.style.display = 'block';
-            uploadBtnContainer.style.display = 'block';
-        }
-
-        function clearFileSelection() {
-            selectedFile = null;
-            fileInput.value = '';
-            
-            // Reset upload area
-            uploadArea.classList.remove('file-selected');
-            
-            // Hide file info and upload button
-            fileInfo.style.display = 'none';
-            uploadBtnContainer.style.display = 'none';
-        }
-
-        function handleFileUpload(file, environment) {
-            // Hide upload button
-            uploadBtnContainer.style.display = 'none';
-            
-            // Reset all agents to waiting state
-            resetAgentStates();
-
-            // Create form data
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('environment', environment);
-
-            // Start Agent 1
-            startAgent(1);
-
-            // Upload file
-            fetch('/upload', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.success) {
-                    // Simulate realistic processing times with 4 agents
-                    setTimeout(() => {
-                        completeAgent(1);
-                        startAgent(2);
-                        
-                        setTimeout(() => {
-                            completeAgent(2);
-                            startAgent(3);
-                            
-                            setTimeout(() => {
-                                completeAgent(3);
-                                startAgent(4);
-                                
-                                setTimeout(() => {
-                                    completeAgent(4);
-                                    showResults(data.download_url);
-                                }, 4000); // Agent 4: 4 seconds
-                            }, 3000); // Agent 3: 3 seconds
-                        }, 3000); // Agent 2: 3 seconds
-                    }, 3000); // Agent 1: 3 seconds
-                } else {
-                    showCustomAlert('Upload Error', 'Error: ' + (data.message || 'Unknown error occurred'));
-                    resetToUploadState();
-                }
-            })
-            .catch(error => {
-                console.error('Upload error:', error);
-                showCustomAlert('Upload Error', 'Upload failed: ' + error.message);
-                resetToUploadState();
-            });
-        }
-
-        function showCustomAlert(title, message) {
-            // Create overlay
-            const overlay = document.createElement('div');
-            overlay.className = 'custom-alert-overlay';
-            
-            // Create alert
-            const alert = document.createElement('div');
-            alert.className = 'custom-alert';
-            
-            alert.innerHTML = `
-                <div class="custom-alert-header">
-                    <div class="custom-alert-icon">
-                        <i class="fas fa-exclamation-triangle"></i>
-                    </div>
-                    <h4 class="custom-alert-title">${title}</h4>
-                </div>
-                <div class="custom-alert-message">${message}</div>
-                <button class="custom-alert-button" onclick="closeCustomAlert()">
-                    <i class="fas fa-check me-2"></i>OK
-                </button>
-            `;
-            
-            // Add to DOM
-            document.body.appendChild(overlay);
-            document.body.appendChild(alert);
-            
-            // Store references for cleanup
-            window.currentAlert = alert;
-            window.currentOverlay = overlay;
-        }
-
-        function closeCustomAlert() {
-            if (window.currentAlert) {
-                window.currentAlert.remove();
-                window.currentAlert = null;
-            }
-            if (window.currentOverlay) {
-                window.currentOverlay.remove();
-                window.currentOverlay = null;
-            }
-        }
-
-        // Close alert when clicking overlay
-        document.addEventListener('click', (e) => {
-            if (e.target && e.target.classList.contains('custom-alert-overlay')) {
-                closeCustomAlert();
-            }
-        });
-
-        // Close alert with Escape key
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && window.currentAlert) {
-                closeCustomAlert();
-            }
-        });
-
-        function resetAgentStates() {
-            for (let i = 1; i <= 4; i++) {
-                const icon = document.getElementById(`agent${i}Icon`);
-                const fill = document.getElementById(`agent${i}Fill`);
-                const percentage = document.getElementById(`agent${i}Percentage`);
-                
-                // Reset states
-                icon.className = 'agent-progress-icon waiting';
-                fill.className = 'agent-progress-fill waiting';
-                fill.style.width = '0%';
-                percentage.textContent = '0%';
-            }
-            
-            // Reset overall progress
-            const overallProgress = document.getElementById('overallProgress');
-            const overallBadge = document.getElementById('overallProgressBadge');
-            overallProgress.style.width = '0%';
-            overallProgress.classList.remove('active');
-            overallBadge.textContent = '0%';
-        }
-
-        function startAgent(agentNum) {
-            const icon = document.getElementById(`agent${agentNum}Icon`);
-            const fill = document.getElementById(`agent${agentNum}Fill`);
-            const percentage = document.getElementById(`agent${agentNum}Percentage`);
-            
-            // Update states
-            icon.className = 'agent-progress-icon active';
-            fill.className = 'agent-progress-fill active';
-            fill.style.width = '50%';
-            percentage.textContent = '50%';
-            
-            // Update overall progress
-            updateOverallProgress(agentNum * 25 - 12.5); // 12.5%, 37.5%, 62.5%, 87.5%
-        }
-
-        function completeAgent(agentNum) {
-            const icon = document.getElementById(`agent${agentNum}Icon`);
-            const fill = document.getElementById(`agent${agentNum}Fill`);
-            const percentage = document.getElementById(`agent${agentNum}Percentage`);
-            
-            // Update states
-            icon.className = 'agent-progress-icon completed';
-            fill.className = 'agent-progress-fill completed';
-            fill.style.width = '100%';
-            percentage.textContent = '100%';
-            
-            // Update overall progress
-            updateOverallProgress(agentNum * 25); // 25%, 50%, 75%, 100%
-        }
-
-        function updateOverallProgress(percentage) {
-            const overallProgress = document.getElementById('overallProgress');
-            const overallBadge = document.getElementById('overallProgressBadge');
-            
-            overallProgress.style.width = percentage + '%';
-            overallBadge.textContent = Math.round(percentage) + '%';
-            
-            overallProgress.classList.add('active');
-        }
-
-        function resetToUploadState() {
-            uploadBtnContainer.style.display = 'block';
-            document.getElementById('resultCard').style.display = 'none';
-        }
-
-        function showResults(downloadUrl) {
-            const resultCard = document.getElementById('resultCard');
-            resultCard.style.display = 'block';
-            document.getElementById('downloadLink').href = downloadUrl;
-            
-            // Update summary with realistic data (these would come from the backend in a real implementation)
-            updateResultsSummary();
-        }
-        
-        function updateResultsSummary() {
-            // Generate realistic summary data
-            const componentsCount = Math.floor(Math.random() * 15) + 8; // 8-23 components
-            const policyCompliance = Math.floor(Math.random() * 20) + 80; // 80-100% compliance
-            const costSavings = Math.floor(Math.random() * 3000) + 1000; // $1000-$4000 savings
-            const codeFiles = Math.floor(Math.random() * 8) + 5; // 5-13 files
-            
-            // Update the display
-            document.getElementById('componentsCount').textContent = componentsCount;
-            document.getElementById('policyCompliance').textContent = policyCompliance + '%';
-            document.getElementById('costSavings').textContent = '$' + costSavings.toLocaleString();
-            document.getElementById('codeFiles').textContent = codeFiles;
-        }
-    </script>
-
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
 </html>
