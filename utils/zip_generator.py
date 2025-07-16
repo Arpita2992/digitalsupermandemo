@@ -20,8 +20,9 @@ class ZipGenerator:
                           bicep_templates: Dict[str, Any], 
                           architecture_analysis: Dict[str, Any],
                           policy_compliance: Dict[str, Any],
-                          environment: str) -> str:
-        """Create a ZIP package with all generated content"""
+                          cost_optimization: Dict[str, Any] = None,
+                          environment: str = 'development') -> str:
+        """Create a ZIP package with all generated content including cost optimization"""
         
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         zip_filename = f"digital_superman_{environment}_{timestamp}.zip"
@@ -43,6 +44,10 @@ class ZipGenerator:
                 
                 # Add cost estimation report
                 self._add_cost_estimation(zipf, architecture_analysis, environment)
+                
+                # Add cost optimization report if available
+                if cost_optimization:
+                    self._add_cost_optimization_report(zipf, cost_optimization, environment)
             
             return zip_filename
             
@@ -142,6 +147,51 @@ An error occurred while generating the cost estimation:
 """
             zipf.writestr("COST_ESTIMATION_ERROR.md", error_report)
     
+    def _add_cost_optimization_report(self, zipf: zipfile.ZipFile, cost_optimization: Dict[str, Any], environment: str):
+        """Add cost optimization report to ZIP"""
+        try:
+            # Import here to avoid circular imports
+            from agents.cost_optimization_agent import CostOptimizationAgent
+            
+            # Create cost optimization agent instance
+            cost_optimizer = CostOptimizationAgent()
+            
+            # Generate cost optimization report
+            report_content = cost_optimizer.generate_cost_optimization_report(cost_optimization)
+            
+            # Add to ZIP
+            zipf.writestr(f'docs/cost_optimization_report_{environment}.md', report_content)
+            
+            # Also add raw optimization data as JSON
+            optimization_data = {
+                'optimization_summary': cost_optimization.get('optimization_summary', {}),
+                'optimization_recommendations': cost_optimization.get('optimization_recommendations', []),
+                'cost_savings': cost_optimization.get('cost_savings', []),
+                'ai_insights': cost_optimization.get('ai_insights', {}),
+                'framework_applied': cost_optimization.get('framework_applied', 'Microsoft Well-Architected Framework'),
+                'bicep_generation_hints': cost_optimization.get('bicep_generation_hints', {})
+            }
+            
+            zipf.writestr(f'data/cost_optimization_data_{environment}.json', 
+                         json.dumps(optimization_data, indent=2))
+            
+        except Exception as e:
+            print(f"⚠️ Warning: Could not add cost optimization report: {str(e)}")
+            # Add fallback report
+            fallback_report = f"""# Cost Optimization Report - {environment.title()}
+
+## Error
+Could not generate detailed cost optimization report: {str(e)}
+
+## Basic Information
+- Environment: {environment}
+- Framework: Microsoft Well-Architected Framework - Cost Optimization
+- Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+Please refer to the architecture analysis and policy compliance reports for additional context.
+"""
+            zipf.writestr(f'docs/cost_optimization_report_{environment}.md', fallback_report)
+
     def _generate_enhanced_policy_compliance_report(self, compliance: Dict[str, Any], environment: str) -> str:
         """Generate enhanced policy compliance report with custom policies table at the top"""
         

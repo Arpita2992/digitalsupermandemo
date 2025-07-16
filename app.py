@@ -5,6 +5,7 @@ from datetime import datetime
 import config
 from agents.architecture_analyzer import ArchitectureAnalyzer
 from agents.policy_checker import PolicyChecker
+from agents.cost_optimization_agent import CostOptimizationAgent
 from agents.bicep_generator import BicepGenerator
 from utils.file_processor import FileProcessor
 from utils.zip_generator import ZipGenerator
@@ -16,6 +17,7 @@ app.config.from_object(config)
 # Singleton instances for performance (lazy loading)
 _arch_analyzer = None
 _policy_checker = None
+_cost_optimizer = None
 _bicep_generator = None
 _file_processor = None
 _zip_generator = None
@@ -31,6 +33,12 @@ def get_policy_checker():
     if _policy_checker is None:
         _policy_checker = PolicyChecker()
     return _policy_checker
+
+def get_cost_optimizer():
+    global _cost_optimizer
+    if _cost_optimizer is None:
+        _cost_optimizer = CostOptimizationAgent()
+    return _cost_optimizer
 
 def get_bicep_generator():
     global _bicep_generator
@@ -157,22 +165,32 @@ def process_architecture_diagram(filepath, environment):
             policy_compliance['post_fix_compliance'] = updated_policy_compliance
             print(f"✅ Policy compliance improved: {len(policy_compliance.get('fixes_applied', []))} fixes applied")
         
-        # Step 4: Generate bicep templates and YAML pipelines with Agent 3 (using fixed analysis)
-        bicep_templates = get_bicep_generator().generate_bicep_templates(
-            fixed_analysis, 
+        # Step 4: Apply cost optimization using Microsoft Well-Architected Framework
+        print(f"💰 Applying cost optimization for {environment} environment...")
+        cost_optimization = get_cost_optimizer().optimize_architecture(
+            fixed_analysis,
             policy_compliance,
             environment
         )
         
-        # Step 5: Create ZIP file with all generated content
+        # Step 5: Generate bicep templates and YAML pipelines with cost optimization
+        bicep_templates = get_bicep_generator().generate_bicep_templates(
+            fixed_analysis, 
+            policy_compliance,
+            cost_optimization,
+            environment
+        )
+        
+        # Step 6: Create ZIP file with all generated content including cost optimization
         zip_filename = get_zip_generator().create_zip_package(
             bicep_templates,
             architecture_analysis,
             policy_compliance,
+            cost_optimization,
             environment
         )
         
-        # Prepare processing summary for frontend
+        # Prepare processing summary for frontend with cost optimization
         processing_summary = {
             'architecture_summary': {
                 'components_count': len(architecture_analysis.get('components', [])),
@@ -183,6 +201,11 @@ def process_architecture_diagram(filepath, environment):
                 'compliant': policy_compliance.get('compliant', False),
                 'violations_count': len(policy_compliance.get('violations', [])),
                 'fixes_applied': len(policy_compliance.get('fixes_applied', []))
+            },
+            'cost_optimization': {
+                'recommendations_count': len(cost_optimization.get('optimization_recommendations', [])),
+                'estimated_savings': cost_optimization.get('optimization_summary', {}).get('estimated_monthly_savings', 'N/A'),
+                'framework_applied': cost_optimization.get('framework_applied', 'Microsoft Well-Architected Framework')
             }
         }
         

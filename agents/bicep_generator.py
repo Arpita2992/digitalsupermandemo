@@ -15,9 +15,9 @@ load_dotenv()
 class BicepGenerator:
     def __init__(self):
         # Check if Azure AI Foundry configuration is available
-        self.azure_endpoint = os.getenv('AZURE_AI_AGENT3_ENDPOINT')
-        self.azure_key = os.getenv('AZURE_AI_AGENT3_KEY')
-        self.azure_deployment = os.getenv('AZURE_AI_AGENT3_DEPLOYMENT', 'gpt-4')
+        self.azure_endpoint = os.getenv('AZURE_AI_AGENT4_ENDPOINT')
+        self.azure_key = os.getenv('AZURE_AI_AGENT4_KEY')
+        self.azure_deployment = os.getenv('AZURE_AI_AGENT4_DEPLOYMENT', 'gpt-4')
         
         if self.azure_endpoint and self.azure_key:
             # Use Azure AI Foundry endpoint
@@ -43,22 +43,23 @@ class BicepGenerator:
         self._template_cache = {}
         self._max_cache_size = 30
     
-    def generate_bicep_templates(self, architecture_analysis: Dict[str, Any], policy_compliance: Dict[str, Any], environment: str = 'dev') -> Dict[str, Any]:
+    def generate_bicep_templates(self, architecture_analysis: Dict[str, Any], policy_compliance: Dict[str, Any], cost_optimization: Dict[str, Any] = None, environment: str = 'dev') -> Dict[str, Any]:
         """
-        Generate Bicep templates with caching
+        Generate Bicep templates with cost optimization considerations
         """
         # Check cache first
-        cache_key = self._get_cache_key(architecture_analysis, policy_compliance, environment)
+        cache_key = self._get_cache_key(architecture_analysis, policy_compliance, cost_optimization, environment)
         cached_result = self._get_from_cache(cache_key)
         if cached_result:
             print("🏗️ Bicep Generator: Using cached templates")
             return cached_result
         
         try:
-            # Create generation prompt
+            # Create generation prompt with cost optimization
             generation_prompt = self._create_generation_prompt(
                 architecture_analysis,
                 policy_compliance,
+                cost_optimization,
                 environment
             )
             
@@ -83,6 +84,7 @@ class BicepGenerator:
                 response.choices[0].message.content,
                 architecture_analysis,
                 policy_compliance,
+                cost_optimization,
                 environment
             )
             
@@ -272,24 +274,43 @@ az group delete --name your-rg-name --yes --no-wait
 """
         return guide
     
-    def _create_generation_prompt(self, analysis: Dict[str, Any], compliance: Dict[str, Any], environment: str) -> str:
-        """Create concise Bicep generation prompt for faster processing"""
+    def _create_generation_prompt(self, analysis: Dict[str, Any], compliance: Dict[str, Any], cost_optimization: Dict[str, Any] = None, environment: str = 'dev') -> str:
+        """Create concise Bicep generation prompt with cost optimization considerations"""
         
         # Get environment-specific requirements
         env_requirements = self._get_environment_requirements(environment)
         
-        prompt = f"""Generate Azure Bicep templates and DevOps pipeline for {environment.upper()}.
+        # Include cost optimization if available
+        cost_context = ""
+        if cost_optimization:
+            bicep_hints = cost_optimization.get('bicep_generation_hints', {})
+            optimization_summary = cost_optimization.get('optimization_summary', {})
+            
+            cost_context = f"""
+Cost Optimization Applied:
+- Framework: Microsoft Well-Architected Cost Optimization
+- Estimated Savings: {optimization_summary.get('estimated_monthly_savings', 'N/A')}
+- Bicep Hints: {json.dumps(bicep_hints, indent=1)}
+- Key Optimizations: {optimization_summary.get('key_optimization_areas', [])}
+"""
+        
+        prompt = f"""Generate Azure Bicep templates and DevOps pipeline for {environment.upper()} with cost optimization.
 
 Environment: {environment}
 Requirements: {json.dumps(env_requirements, indent=1)}
 
+{cost_context}
+
 Architecture: {json.dumps(analysis, indent=1)}
+
+IMPORTANT: Implement cost optimizations from bicep_generation_hints in the templates.
+Include conditional deployments, environment-specific SKUs, and auto-shutdown for dev environments.
 
 Return JSON:
 {{
     "bicep_templates": {{
-        "main.bicep": "template content",
-        "parameters/": {{"{environment}.parameters.json": "params"}}
+        "main.bicep": "template content with cost optimizations",
+        "parameters/": {{"{environment}.parameters.json": "optimized params"}}
     }},
     "yaml_pipelines": {{
         "azure-pipelines-{environment}.yml": "pipeline content"
@@ -299,12 +320,12 @@ Return JSON:
     }}
 }}
 
-Make it {env_requirements.get('pipeline_complexity', 'simple')} for {environment}."""
+Make it {env_requirements.get('pipeline_complexity', 'simple')} for {environment} with cost optimization focus."""
         
         return prompt
     
-    def _parse_generation_response(self, response: str, analysis: Dict[str, Any], compliance: Dict[str, Any], environment: str) -> Dict[str, Any]:
-        """Parse the generation response"""
+    def _parse_generation_response(self, response: str, analysis: Dict[str, Any], compliance: Dict[str, Any], cost_optimization: Dict[str, Any] = None, environment: str = 'dev') -> Dict[str, Any]:
+        """Parse the generation response with cost optimization metadata"""
         try:
             # Try to extract JSON from the response
             import re
@@ -315,25 +336,27 @@ Make it {env_requirements.get('pipeline_complexity', 'simple')} for {environment
                     'generated_timestamp': self._get_timestamp(),
                     'target_environment': environment,
                     'source_analysis': analysis,
-                    'compliance_check': compliance
+                    'compliance_check': compliance,
+                    'cost_optimization_applied': bool(cost_optimization),
+                    'estimated_monthly_savings': cost_optimization.get('optimization_summary', {}).get('estimated_monthly_savings', 'N/A') if cost_optimization else 'N/A'
                 }
                 return generation_data
             else:
-                return self._fallback_generation_parse(response, analysis, compliance, environment)
+                return self._fallback_generation_parse(response, analysis, compliance, cost_optimization, environment)
         except json.JSONDecodeError:
-            return self._fallback_generation_parse(response, analysis, compliance, environment)
+            return self._fallback_generation_parse(response, analysis, compliance, cost_optimization, environment)
     
-    def _fallback_generation_parse(self, response: str, analysis: Dict[str, Any], compliance: Dict[str, Any], environment: str) -> Dict[str, Any]:
-        """Fallback parsing for generation response"""
+    def _fallback_generation_parse(self, response: str, analysis: Dict[str, Any], compliance: Dict[str, Any], cost_optimization: Dict[str, Any] = None, environment: str = 'dev') -> Dict[str, Any]:
+        """Fallback parsing for generation response with cost optimization"""
         return {
             'bicep_templates': {
-                'main.bicep': self._generate_fallback_bicep(analysis, environment)
+                'main.bicep': self._generate_fallback_bicep(analysis, environment, cost_optimization)
             },
             'yaml_pipelines': {
                 f'azure-pipelines-{environment}.yml': self._generate_fallback_pipeline(environment)
             },
             'documentation': {
-                'README.md': self._generate_fallback_readme(environment)
+                'README.md': self._generate_fallback_readme(environment, cost_optimization)
             },
             'scripts': {
                 f'deploy-{environment}.ps1': self._generate_fallback_deploy_script(environment)
@@ -343,14 +366,24 @@ Make it {env_requirements.get('pipeline_complexity', 'simple')} for {environment
                 'target_environment': environment,
                 'source_analysis': analysis,
                 'compliance_check': compliance,
+                'cost_optimization_applied': bool(cost_optimization),
+                'estimated_monthly_savings': cost_optimization.get('optimization_summary', {}).get('estimated_monthly_savings', 'N/A') if cost_optimization else 'N/A',
                 'parsing_note': 'Used fallback templates due to JSON parsing error'
             },
             'raw_response': response
         }
     
-    def _generate_fallback_bicep(self, analysis: Dict[str, Any], environment: str) -> str:
-        """Generate fallback Bicep template"""
+    def _generate_fallback_bicep(self, analysis: Dict[str, Any], environment: str, cost_optimization: Dict[str, Any] = None) -> str:
+        """Generate fallback Bicep template with cost optimization"""
         components = analysis.get('components', [])
+        
+        # Get cost optimization hints if available
+        bicep_hints = {}
+        if cost_optimization:
+            bicep_hints = cost_optimization.get('bicep_generation_hints', {})
+        
+        env_configs = bicep_hints.get('environment_configurations', {})
+        cost_optimized = env_configs.get('cost_optimized', False)
         
         bicep_content = f"""
 @description('Location for all resources')
@@ -359,22 +392,53 @@ param location string = resourceGroup().location
 @description('Environment ({environment})')
 param environment string = '{environment}'
 
+@description('Cost optimization enabled')
+param costOptimized bool = {str(cost_optimized).lower()}
+
 @description('Common tags for all resources')
 param tags object = {{
   Environment: environment
   CreatedBy: 'DigitalSuperman'
   Project: 'Infrastructure'
   GeneratedFor: '{environment.title()}'
+  CostOptimized: string(costOptimized)
 }}
 """
         
-        # Add basic resources based on detected components
+        # Add environment-specific parameters from cost optimization
+        template_params = bicep_hints.get('template_parameters', {})
+        for param_name, param_config in template_params.items():
+            if param_config.get('environment_specific'):
+                bicep_content += f"\n@description('Cost optimized parameter for {param_name}')"
+                bicep_content += f"\nparam {param_name} string = '{param_config.get('default', 'Standard')}'"
+        
+        # Add auto-shutdown for development VMs
+        if environment == 'development' and env_configs.get('auto_shutdown_enabled'):
+            bicep_content += """
+
+@description('Auto-shutdown time for development VMs')
+param autoShutdownTime string = '19:00'
+
+@description('Auto-shutdown timezone')
+param autoShutdownTimeZone string = 'UTC'
+"""
+        
+        # Add basic resources based on detected components with cost optimization
         for component in components:
             component_type = component.get('type', '').lower()
             if 'storage' in component_type:
-                bicep_content += "\n" + self.bicep_templates['storage_account']
+                bicep_content += "\n// Storage Account with cost optimization\n" + self.bicep_templates['storage_account']
             elif 'app' in component_type or 'web' in component_type:
-                bicep_content += "\n" + self.bicep_templates['app_service']
+                bicep_content += "\n// App Service with cost optimization\n" + self.bicep_templates['app_service']
+        
+        # Add conditional deployments from cost optimization
+        conditional_deployments = bicep_hints.get('conditional_deployments', [])
+        if conditional_deployments:
+            bicep_content += "\n\n// Conditional deployments for cost optimization"
+            for deployment in conditional_deployments:
+                condition = deployment.get('condition', '')
+                feature = deployment.get('feature', '')
+                bicep_content += f"\n// {feature} - {condition}"
         
         return bicep_content
     
@@ -564,8 +628,32 @@ stages:
                   --verbose
 """
     
-    def _generate_fallback_readme(self, environment: str) -> str:
-        """Generate fallback README"""
+    def _generate_fallback_readme(self, environment: str, cost_optimization: Dict[str, Any] = None) -> str:
+        """Generate fallback README with cost optimization information"""
+        
+        cost_info = ""
+        if cost_optimization:
+            optimization_summary = cost_optimization.get('optimization_summary', {})
+            estimated_savings = optimization_summary.get('estimated_monthly_savings', 'N/A')
+            key_areas = optimization_summary.get('key_optimization_areas', [])
+            
+            cost_info = f"""
+## Cost Optimization
+
+This infrastructure has been optimized for cost efficiency using Microsoft's Well-Architected Framework:
+
+- **Estimated Monthly Savings**: {estimated_savings}
+- **Framework Applied**: Microsoft Well-Architected Framework - Cost Optimization
+- **Key Optimization Areas**: {', '.join(key_areas) if key_areas else 'Resource right-sizing, environment-specific configurations'}
+
+### Cost Optimization Features
+
+- Environment-specific resource SKUs
+- Auto-shutdown for development resources (if applicable)
+- Right-sized compute and storage resources
+- Optimized networking configurations
+"""
+        
         return f"""
 # Digital Superman - Azure Infrastructure ({environment.title()})
 
@@ -573,11 +661,11 @@ This repository contains the Azure infrastructure templates generated by Digital
 
 ## Overview
 
-This infrastructure was automatically generated based on your Azure architecture diagram analysis and optimized for {environment} deployment.
-
+This infrastructure was automatically generated based on your Azure architecture diagram analysis and optimized for {environment} deployment with cost optimization applied.
+{cost_info}
 ## Structure
 
-- `bicep/main.bicep` - Main Bicep template for {environment}
+- `bicep/main.bicep` - Main Bicep template for {environment} with cost optimizations
 - `bicep/parameters/{environment}.parameters.json` - Environment-specific parameters
 - `azure-pipelines-{environment}.yml` - Azure DevOps CI/CD pipeline for {environment}
 - `deploy-{environment}.ps1` - PowerShell deployment script for {environment}
@@ -585,10 +673,11 @@ This infrastructure was automatically generated based on your Azure architecture
 ## Environment: {environment.upper()}
 
 This configuration is specifically tailored for {environment} with appropriate:
-- Resource SKUs and configurations
+- Resource SKUs and configurations (cost optimized)
 - Security and compliance settings
 - Pipeline complexity and approval gates
 - Monitoring and backup requirements
+- Cost optimization features
 
 ## Deployment
 
@@ -764,9 +853,9 @@ Write-Host "🎉 Infrastructure deployment for {environment.upper()} completed!"
         
         return requirements.get(environment.lower(), requirements['development'])
     
-    def _get_cache_key(self, architecture_analysis, policy_compliance, environment):
-        """Generate cache key"""
-        key_data = f"{str(architecture_analysis)}{str(policy_compliance)}{environment}"
+    def _get_cache_key(self, architecture_analysis, policy_compliance, cost_optimization, environment):
+        """Generate cache key including cost optimization"""
+        key_data = f"{str(architecture_analysis)}{str(policy_compliance)}{str(cost_optimization)}{environment}"
         return hashlib.md5(key_data.encode()).hexdigest()
     
     def _get_from_cache(self, cache_key):

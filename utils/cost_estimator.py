@@ -68,73 +68,76 @@ class AzureCostEstimator:
         """Initialize the cost estimator with Azure pricing data"""
         self.pricing_data = self._load_pricing_data()
         self.region_multipliers = self._load_region_multipliers()
+        self.currency = 'EUR'  # Using Euros
+        self.usd_to_eur_rate = 0.85  # Approximate conversion rate
         
     def _load_pricing_data(self) -> Dict[str, Any]:
         """Load Azure pricing data for different resource types"""
         # This would typically come from Azure Pricing API or a database
-        # For now, we'll use estimated pricing data (USD per month)
+        # For now, we'll use estimated pricing data (EUR per month)
+        # Converted from USD using approximate rate of 0.85 EUR = 1 USD
         return {
             'Microsoft.Compute/virtualMachines': {
-                'Standard_B1s': {'cores': 1, 'memory': 1, 'monthly_cost': 7.59},
-                'Standard_B2s': {'cores': 2, 'memory': 4, 'monthly_cost': 30.37},
-                'Standard_D2s_v3': {'cores': 2, 'memory': 8, 'monthly_cost': 70.08},
-                'Standard_D4s_v3': {'cores': 4, 'memory': 16, 'monthly_cost': 140.16},
-                'Standard_F2s_v2': {'cores': 2, 'memory': 4, 'monthly_cost': 60.74},
-                'Standard_F4s_v2': {'cores': 4, 'memory': 8, 'monthly_cost': 121.47}
+                'Standard_B1s': {'cores': 1, 'memory': 1, 'monthly_cost': 6.45},  # 7.59 * 0.85
+                'Standard_B2s': {'cores': 2, 'memory': 4, 'monthly_cost': 25.81},  # 30.37 * 0.85
+                'Standard_D2s_v3': {'cores': 2, 'memory': 8, 'monthly_cost': 59.57},  # 70.08 * 0.85
+                'Standard_D4s_v3': {'cores': 4, 'memory': 16, 'monthly_cost': 119.14},  # 140.16 * 0.85
+                'Standard_F2s_v2': {'cores': 2, 'memory': 4, 'monthly_cost': 51.63},  # 60.74 * 0.85
+                'Standard_F4s_v2': {'cores': 4, 'memory': 8, 'monthly_cost': 103.25}  # 121.47 * 0.85
             },
             'Microsoft.Storage/storageAccounts': {
-                'Standard_LRS': {'monthly_cost_per_gb': 0.0184, 'transactions_per_10k': 0.0004},
-                'Standard_ZRS': {'monthly_cost_per_gb': 0.023, 'transactions_per_10k': 0.0004},
-                'Standard_GRS': {'monthly_cost_per_gb': 0.0368, 'transactions_per_10k': 0.0004},
-                'Premium_LRS': {'monthly_cost_per_gb': 0.15, 'transactions_per_10k': 0.0013}
+                'Standard_LRS': {'monthly_cost_per_gb': 0.0156, 'transactions_per_10k': 0.0003},  # 0.0184 * 0.85
+                'Standard_ZRS': {'monthly_cost_per_gb': 0.0196, 'transactions_per_10k': 0.0003},  # 0.023 * 0.85
+                'Standard_GRS': {'monthly_cost_per_gb': 0.0313, 'transactions_per_10k': 0.0003},  # 0.0368 * 0.85
+                'Premium_LRS': {'monthly_cost_per_gb': 0.1275, 'transactions_per_10k': 0.0011}  # 0.15 * 0.85
             },
             'Microsoft.Sql/servers/databases': {
-                'Basic': {'monthly_cost': 4.99, 'max_size_gb': 2},
-                'S0': {'monthly_cost': 15.00, 'max_size_gb': 250},
-                'S1': {'monthly_cost': 30.00, 'max_size_gb': 250},
-                'S2': {'monthly_cost': 75.00, 'max_size_gb': 250},
-                'P1': {'monthly_cost': 465.00, 'max_size_gb': 1000},
-                'P2': {'monthly_cost': 930.00, 'max_size_gb': 1000}
+                'Basic': {'monthly_cost': 4.24, 'max_size_gb': 2},  # 4.99 * 0.85
+                'S0': {'monthly_cost': 12.75, 'max_size_gb': 250},  # 15.00 * 0.85
+                'S1': {'monthly_cost': 25.50, 'max_size_gb': 250},  # 30.00 * 0.85
+                'S2': {'monthly_cost': 63.75, 'max_size_gb': 250},  # 75.00 * 0.85
+                'P1': {'monthly_cost': 395.25, 'max_size_gb': 1000},  # 465.00 * 0.85
+                'P2': {'monthly_cost': 790.50, 'max_size_gb': 1000}  # 930.00 * 0.85
             },
             'Microsoft.Web/serverfarms': {
                 'Free': {'monthly_cost': 0.00, 'instances': 1},
-                'Shared': {'monthly_cost': 9.49, 'instances': 1},
-                'Basic_B1': {'monthly_cost': 13.14, 'instances': 3},
-                'Basic_B2': {'monthly_cost': 26.28, 'instances': 3},
-                'Standard_S1': {'monthly_cost': 70.08, 'instances': 10},
-                'Standard_S2': {'monthly_cost': 140.16, 'instances': 10},
-                'Premium_P1': {'monthly_cost': 175.20, 'instances': 20},
-                'Premium_P2': {'monthly_cost': 350.40, 'instances': 20}
+                'Shared': {'monthly_cost': 8.07, 'instances': 1},  # 9.49 * 0.85
+                'Basic_B1': {'monthly_cost': 11.17, 'instances': 3},  # 13.14 * 0.85
+                'Basic_B2': {'monthly_cost': 22.34, 'instances': 3},  # 26.28 * 0.85
+                'Standard_S1': {'monthly_cost': 59.57, 'instances': 10},  # 70.08 * 0.85
+                'Standard_S2': {'monthly_cost': 119.14, 'instances': 10},  # 140.16 * 0.85
+                'Premium_P1': {'monthly_cost': 148.92, 'instances': 20},  # 175.20 * 0.85
+                'Premium_P2': {'monthly_cost': 297.84, 'instances': 20}  # 350.40 * 0.85
             },
             'Microsoft.Network/applicationGateways': {
-                'Standard_Small': {'monthly_cost': 21.90, 'data_processing_per_gb': 0.008},
-                'Standard_Medium': {'monthly_cost': 43.80, 'data_processing_per_gb': 0.008},
-                'Standard_Large': {'monthly_cost': 87.60, 'data_processing_per_gb': 0.008},
-                'WAF_Medium': {'monthly_cost': 175.20, 'data_processing_per_gb': 0.008},
-                'WAF_Large': {'monthly_cost': 350.40, 'data_processing_per_gb': 0.008}
+                'Standard_Small': {'monthly_cost': 18.62, 'data_processing_per_gb': 0.007},  # 21.90 * 0.85
+                'Standard_Medium': {'monthly_cost': 37.23, 'data_processing_per_gb': 0.007},  # 43.80 * 0.85
+                'Standard_Large': {'monthly_cost': 74.46, 'data_processing_per_gb': 0.007},  # 87.60 * 0.85
+                'WAF_Medium': {'monthly_cost': 148.92, 'data_processing_per_gb': 0.007},  # 175.20 * 0.85
+                'WAF_Large': {'monthly_cost': 297.84, 'data_processing_per_gb': 0.007}  # 350.40 * 0.85
             },
             'Microsoft.Network/loadBalancers': {
                 'Basic': {'monthly_cost': 0.00, 'data_processing_per_gb': 0.00},
-                'Standard': {'monthly_cost': 18.25, 'data_processing_per_gb': 0.005}
+                'Standard': {'monthly_cost': 15.51, 'data_processing_per_gb': 0.004}  # 18.25 * 0.85
             },
             'Microsoft.KeyVault/vaults': {
-                'Standard': {'monthly_cost': 0.00, 'operations_per_10k': 0.03},
-                'Premium': {'monthly_cost': 0.00, 'operations_per_10k': 0.03, 'hsm_operations_per_10k': 1.00}
+                'Standard': {'monthly_cost': 0.00, 'operations_per_10k': 0.026},  # 0.03 * 0.85
+                'Premium': {'monthly_cost': 0.00, 'operations_per_10k': 0.026, 'hsm_operations_per_10k': 0.85}  # 1.00 * 0.85
             },
             'Microsoft.DocumentDB/databaseAccounts': {
-                'Standard': {'monthly_cost_per_ru': 0.008, 'storage_per_gb': 0.25}
+                'Standard': {'monthly_cost_per_ru': 0.007, 'storage_per_gb': 0.21}  # 0.008 * 0.85, 0.25 * 0.85
             },
             'Microsoft.Cache/Redis': {
-                'Basic_C0': {'monthly_cost': 15.18, 'memory_gb': 0.25},
-                'Basic_C1': {'monthly_cost': 30.37, 'memory_gb': 1},
-                'Standard_C0': {'monthly_cost': 30.37, 'memory_gb': 0.25},
-                'Standard_C1': {'monthly_cost': 60.74, 'memory_gb': 1},
-                'Premium_P1': {'monthly_cost': 455.10, 'memory_gb': 6}
+                'Basic_C0': {'monthly_cost': 12.90, 'memory_gb': 0.25},  # 15.18 * 0.85
+                'Basic_C1': {'monthly_cost': 25.81, 'memory_gb': 1},  # 30.37 * 0.85
+                'Standard_C0': {'monthly_cost': 25.81, 'memory_gb': 0.25},  # 30.37 * 0.85
+                'Standard_C1': {'monthly_cost': 51.63, 'memory_gb': 1},  # 60.74 * 0.85
+                'Premium_P1': {'monthly_cost': 386.84, 'memory_gb': 6}  # 455.10 * 0.85
             },
             'Microsoft.ContainerRegistry/registries': {
-                'Basic': {'monthly_cost': 5.00, 'storage_per_gb': 0.10},
-                'Standard': {'monthly_cost': 20.00, 'storage_per_gb': 0.10},
-                'Premium': {'monthly_cost': 50.00, 'storage_per_gb': 0.10}
+                'Basic': {'monthly_cost': 4.25, 'storage_per_gb': 0.085},  # 5.00 * 0.85
+                'Standard': {'monthly_cost': 17.00, 'storage_per_gb': 0.085},  # 20.00 * 0.85
+                'Premium': {'monthly_cost': 42.50, 'storage_per_gb': 0.085}  # 50.00 * 0.85
             },
             'Microsoft.ContainerService/managedClusters': {
                 'Standard': {'monthly_cost': 73.00, 'node_cost_multiplier': 1.0}
@@ -317,12 +320,12 @@ class AzureCostEstimator:
             # Generate recommendations
             recommendations = self._generate_cost_recommendations(cost_estimates, environment)
             
-            print(f"💰 Cost estimation completed: ${total_monthly_cost:.2f}/month")
+            print(f"💰 Cost estimation completed: €{total_monthly_cost:.2f}/month")
             
             return {
                 'total_monthly_cost': round(total_monthly_cost, 2),
                 'total_yearly_cost': round(total_yearly_cost, 2),
-                'currency': 'USD',
+                'currency': 'EUR',
                 'region': region,
                 'environment': environment,
                 'environment_multiplier': env_multiplier,
@@ -347,7 +350,7 @@ class AzureCostEstimator:
                 'error': f'Cost estimation failed: {str(e)}',
                 'total_monthly_cost': 0,
                 'total_yearly_cost': 0,
-                'currency': 'USD',
+                'currency': 'EUR',
                 'resource_costs': [],
                 'recommendations': []
             }
@@ -653,14 +656,14 @@ class AzureCostEstimator:
         # Default SKU based on environment
         sku = 'Standard' if environment == 'development' else 'Premium'
         
-        # Base cost for Front Door
-        base_cost = 22.0 if sku == 'Standard' else 330.0
+        # Base cost for Front Door (converted to EUR)
+        base_cost = 18.7 if sku == 'Standard' else 280.5  # 22.0 * 0.85, 330.0 * 0.85
         
         # Estimated routing rules and data transfer
         estimated_rules = 5
         estimated_data_transfer = 100  # GB per month
         
-        monthly_cost = base_cost + (estimated_rules * 1.0) + (estimated_data_transfer * 0.085)
+        monthly_cost = base_cost + (estimated_rules * 0.85) + (estimated_data_transfer * 0.072)  # 1.0 * 0.85, 0.085 * 0.85
         
         return {
             'resource_name': resource.get('name', 'Unknown Front Door'),
@@ -730,8 +733,8 @@ class AzureCostEstimator:
             'production': 20
         }.get(environment, 5)
         
-        # Pricing: First 5 GB free, then $2.30 per GB
-        monthly_cost = max(0, (data_ingestion_gb - 5) * 2.30)
+        # Pricing: First 5 GB free, then €1.96 per GB (2.30 * 0.85)
+        monthly_cost = max(0, (data_ingestion_gb - 5) * 1.96)
         
         return {
             'resource_name': resource.get('name', 'Unknown App Insights'),
@@ -742,7 +745,7 @@ class AzureCostEstimator:
             'cost_factors': [
                 f'Data Ingestion: {data_ingestion_gb} GB',
                 f'Data Retention: 90 days (free)',
-                f'Pricing: First 5 GB free, then $2.30/GB'
+                f'Pricing: First 5 GB free, then €1.96/GB'
             ],
             'assumptions': [
                 f'Estimated {data_ingestion_gb} GB data ingestion per month',
@@ -760,8 +763,8 @@ class AzureCostEstimator:
             'production': 50
         }.get(environment, 10)
         
-        # Pricing: First 5 GB free, then $2.30 per GB
-        monthly_cost = max(0, (data_ingestion_gb - 5) * 2.30)
+        # Pricing: First 5 GB free, then €1.96 per GB (2.30 * 0.85)
+        monthly_cost = max(0, (data_ingestion_gb - 5) * 1.96)
         
         return {
             'resource_name': resource.get('name', 'Unknown Log Analytics'),
@@ -772,7 +775,7 @@ class AzureCostEstimator:
             'cost_factors': [
                 f'Data Ingestion: {data_ingestion_gb} GB',
                 f'Data Retention: 31 days (free)',
-                f'Pricing: First 5 GB free, then $2.30/GB'
+                f'Pricing: First 5 GB free, then €1.96/GB'
             ],
             'assumptions': [
                 f'Estimated {data_ingestion_gb} GB data ingestion per month',
@@ -902,8 +905,8 @@ class AzureCostEstimator:
         # Summary
         total_cost = cost_estimation.get('total_monthly_cost', 0)
         report.append(f"## Summary")
-        report.append(f"**Total Monthly Cost**: ${total_cost:.2f}")
-        report.append(f"**Total Annual Cost**: ${total_cost * 12:.2f}")
+        report.append(f"**Total Monthly Cost**: €{total_cost:.2f}")
+        report.append(f"**Total Annual Cost**: €{total_cost * 12:.2f}")
         report.append(f"**Environment**: {cost_estimation.get('environment', 'development')}")
         report.append(f"**Region**: {cost_estimation.get('region', 'East US')}")
         report.append(f"**Generated**: {cost_estimation.get('generated_date', 'N/A')}")
@@ -922,8 +925,8 @@ class AzureCostEstimator:
                 
                 report.append(f"### {name}")
                 report.append(f"- **Type**: {resource_type}")
-                report.append(f"- **Monthly Cost**: ${monthly_cost:.2f}")
-                report.append(f"- **Annual Cost**: ${monthly_cost * 12:.2f}")
+                report.append(f"- **Monthly Cost**: €{monthly_cost:.2f}")
+                report.append(f"- **Annual Cost**: €{monthly_cost * 12:.2f}")
                 
                 # Add cost factors if available
                 cost_factors = resource.get('cost_factors', [])
@@ -959,7 +962,7 @@ class AzureCostEstimator:
             
             for category, cost in cost_breakdown.items():
                 if cost > 0:  # Only show categories with actual costs
-                    report.append(f"- **{category}**: ${cost:.2f}/month")
+                    report.append(f"- **{category}**: €{cost:.2f}/month")
             report.append("")
         
         # Recommendations
@@ -1012,7 +1015,7 @@ class AzureCostEstimator:
     
     def _estimate_key_vault_cost(self, resource: Dict[str, Any], environment: str) -> Dict[str, Any]:
         """Estimate Key Vault costs"""
-        base_cost = 0.03  # $0.03 per 10,000 operations
+        base_cost = 0.026  # €0.026 per 10,000 operations (0.03 * 0.85)
         
         # Estimate operations based on environment
         if environment == 'development':
@@ -1032,7 +1035,7 @@ class AzureCostEstimator:
             'sku': 'Standard',
             'cost_factors': [
                 f'Operations: {operations:,}',
-                f'Rate: $0.03 per 10K operations',
+                f'Rate: €0.026 per 10K operations',
                 'Certificate operations: Additional cost'
             ],
             'assumptions': [
