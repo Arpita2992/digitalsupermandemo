@@ -102,6 +102,10 @@ Transform your Azure architecture diagrams into production-ready infrastructure 
 
 1. **Start the Flask application**
    ```bash
+   # Using PowerShell script (recommended)
+   .\scripts\start_flask.ps1
+
+   # Or directly with Python
    python app.py
    ```
 
@@ -202,22 +206,45 @@ curl -X POST -F "file=@diagram.png" -F "environment=development" http://localhos
 ### Project Structure
 
 ```
-DigitalSuperman/
-├── agents/                    # AI agents
-│   ├── architecture_analyzer.py
-│   ├── policy_checker.py
-│   └── bicep_generator.py
-├── utils/                     # Utility modules
-│   ├── file_processor.py
-│   └── zip_generator.py
-├── templates/                 # HTML templates
-│   └── index.html
-├── uploads/                   # File uploads (created at runtime)
-├── output/                    # Generated packages (created at runtime)
-├── app.py                     # Flask application
-├── config.py                  # Configuration
-├── requirements.txt           # Python dependencies
-└── README.md                  # This file
+digitalsupermandemo/
+├── app.py                          # Main Flask application
+├── config.py                       # Application configuration
+├── requirements.txt                # Python dependencies
+├── README.md                       # Project documentation
+├── .env.example                    # Environment variables template
+├── .gitignore                      # Git ignore rules
+│
+├── agents/                         # AI Processing Agents
+│   ├── architecture_analyzer.py    # Analyzes architecture diagrams
+│   ├── bicep_generator.py          # Generates Bicep templates
+│   └── policy_checker.py           # Validates compliance policies
+│
+├── utils/                          # Utility Functions
+│   ├── cost_estimator.py           # Azure cost estimation
+│   ├── file_processor.py           # File format processing
+│   ├── performance.py              # Performance monitoring
+│   └── zip_generator.py            # Output package generation
+│
+├── static/                         # Static Web Assets
+│   └── samples/                    # Sample architecture files
+│
+├── templates/                      # HTML Templates
+│   └── index.html                  # Main web interface
+│
+├── scripts/                        # Deployment & Utility Scripts
+│   ├── start_flask.ps1             # Flask startup script
+│   └── production_checklist.ps1    # Production deployment checklist
+│
+├── tests/                          # Test Suite
+│   └── (comprehensive test files)
+│
+├── docs/                           # Documentation
+│   ├── TROUBLESHOOTING.md          # Troubleshooting guide
+│   └── PRODUCTION_SUMMARY.md       # Production deployment guide
+│
+├── policies/                       # Azure Policy Templates
+├── uploads/                        # File Uploads (Runtime)
+└── output/                         # Generated Outputs (Runtime)
 ```
 
 ### AI Processing Flow

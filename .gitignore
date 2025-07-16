@@ -48,6 +48,41 @@ coverage.xml
 *.cover
 *.py,cover
 .hypothesis/
+
+# Digital Superman specific ignores
+uploads/*
+!uploads/.gitkeep
+output/*
+!output/.gitkeep
+*.tmp
+*.temp
+*_temp_*
+*_debug_*
+test_*.png
+test_*.jpg
+test_*.pdf
+*test_results*.json
+cost_estimation.json
+COST_ESTIMATION_ERROR.md
+COST_ESTIMATION_REPORT.md
+
+# Environment variables
+.env
+
+# IDE specific
+.vscode/settings.json
+.vscode/launch.json
+*.swp
+*.swo
+
+# OS specific
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Log files
+*.log
+logs/
 .pytest_cache/
 cover/
 
