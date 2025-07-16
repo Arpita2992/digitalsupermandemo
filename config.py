@@ -14,8 +14,14 @@ AZURE_CLIENT_ID = os.getenv('AZURE_CLIENT_ID')
 AZURE_CLIENT_SECRET = os.getenv('AZURE_CLIENT_SECRET')
 
 # Flask Configuration
-SECRET_KEY = os.getenv('SECRET_KEY', 'your-secret-key-change-this-in-production')
-DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
+SECRET_KEY = os.getenv('FLASK_SECRET_KEY', 'your-secret-key-change-this-in-production')
+DEBUG = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
+ENV = os.getenv('FLASK_ENV', 'production')
+
+# Security Configuration
+SESSION_COOKIE_SECURE = ENV == 'production'
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
 
 # File Upload Configuration
 UPLOAD_FOLDER = 'uploads'

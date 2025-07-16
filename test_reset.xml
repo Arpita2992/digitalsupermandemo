@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<architecture>
-  <title>AWS Test Architecture</title>
-  <services>
-    <service>EC2 instances</service>
-    <service>S3 buckets</service>
-    <service>Lambda functions</service>
-  </services>
-</architecture>

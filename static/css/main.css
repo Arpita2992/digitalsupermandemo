@@ -62,31 +62,6 @@ body {
   font-size: 1.8rem;
 }
 
-.dashboard-btn {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: white;
-  padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
-  font-weight: 500;
-  transition: all 0.3s ease;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.dashboard-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.3);
-  color: white;
-  transform: translateY(-1px);
-}
-
-.dashboard-btn i {
-  color: #fbbf24;
-}
-
 .status-indicator {
   background: rgba(16, 185, 129, 0.2);
   color: #10b981;

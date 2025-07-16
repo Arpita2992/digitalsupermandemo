@@ -49,6 +49,25 @@ coverage.xml
 *.py,cover
 .hypothesis/
 
+# Test files and debug files
+test_*.py
+test_*.xml
+test_*.drawio
+test_*.txt
+test_*.html
+test_*.md
+debug_*.py
+traces.db
+
+# Development and temporary files
+*.tmp
+*.temp
+*.log
+*.bak
+*.swp
+*.swo
+*~
+
 # Digital Superman specific ignores
 uploads/*
 !uploads/.gitkeep
