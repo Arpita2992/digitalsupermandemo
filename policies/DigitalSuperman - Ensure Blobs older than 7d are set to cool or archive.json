@@ -1,0 +1,52 @@
+{
+    "displayName": "Ensure Blobs Older Than 7 Days Are Set to Cool or Archive Tier",
+    "policyType": "Custom",
+    "mode": "All",
+    "description": "This policy ensures that any blob existing longer than 7 days is moved to Cool or Archive tier.",
+    "metadata": {
+        "version": "1.0.0",
+        "category": "Storage"
+    },
+    "parameters": {
+        "effect": {
+            "type": "String",
+            "metadata": {
+                "displayName": "Effect",
+                "description": "Effect of the policy"
+            },
+            "allowedValues": [
+                "Audit",
+                "Disabled"
+            ],
+            "defaultValue": "Audit"
+        },
+        "daysThreshold": {
+            "type": "Integer",
+            "metadata": {
+                "displayName": "Days Threshold",
+                "description": "Number of days after which a blob should be moved to Cool or Archive tier"
+            },
+            "defaultValue": 7
+        },
+        "targetTiers": {
+            "type": "Array",
+            "metadata": {
+                "displayName": "Target Tiers",
+                "description": "The tiers to which blobs should be moved if they exceed the age threshold."
+            },
+            "defaultValue": [
+                "Cool",
+                "Archive"
+            ]
+        }
+    },
+    "policyRule": {
+        "if": {
+            "field": "Microsoft.Storage/storageAccounts/blobServices/default/containers/blobs",
+            "exists": "true"
+        },
+        "then": {
+            "effect": "[parameters('effect')]"
+        }
+    }
+}

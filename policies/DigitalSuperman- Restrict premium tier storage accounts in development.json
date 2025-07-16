@@ -1,0 +1,65 @@
+{
+    "displayName": "Restrict Certain SKUs and LRS for Storage Accounts in Development Subscriptions",
+    "policyType": "Custom",
+    "mode": "Indexed",
+    "description": "This policy prevents the use of specified SKUs for storage accounts in development subscriptions.",
+    "metadata": {
+        "version": "1.1.0",
+        "category": "Storage"
+    },
+    "parameters": {
+        "effect": {
+            "type": "String",
+            "metadata": {
+                "displayName": "Effect",
+                "description": "Effect of the policy"
+            },
+            "allowedValues": [
+                "Audit",
+                "Deny",
+                "Disabled"
+            ],
+            "defaultValue": "Audit"
+        },
+        "developmentSubscriptionIds": {
+            "type": "Array",
+            "metadata": {
+                "displayName": "Development Subscriptions",
+                "description": "List of subscription IDs considered as development"
+            }
+        },
+        "listOfNotAllowedSKUs": {
+            "type": "Array",
+            "metadata": {
+                "displayName": "Disallowed SKUs",
+                "description": "The list of SKUs that cannot be specified for storage accounts in development subscriptions.",
+                "strongType": "StorageSKUs"
+            },
+            "defaultValue": [
+                "Standard_LRS",
+                "Premium_LRS"
+            ]
+        }
+    },
+    "policyRule": {
+        "if": {
+            "allOf": [
+                {
+                    "field": "type",
+                    "equals": "Microsoft.Storage/storageAccounts"
+                },
+                {
+                    "field": "subscriptionId",
+                    "in": "[parameters('developmentSubscriptionIds')]"
+                },
+                {
+                    "field": "Microsoft.Storage/storageAccounts/sku.name",
+                    "in": "[parameters('listOfNotAllowedSKUs')]"
+                }
+            ]
+        },
+        "then": {
+            "effect": "[parameters('effect')]"
+        }
+    }
+}

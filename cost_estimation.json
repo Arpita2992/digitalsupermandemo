@@ -1,0 +1,166 @@
+{
+  "total_monthly_cost": 504.2,
+  "total_yearly_cost": 6050.4,
+  "currency": "USD",
+  "region": "eastus",
+  "environment": "production",
+  "environment_multiplier": 1.0,
+  "region_multiplier": 1.0,
+  "resource_costs": [
+    {
+      "resource_name": "Azure Front Door",
+      "resource_type": "Microsoft.Network/frontDoors",
+      "monthly_cost": 343.5,
+      "yearly_cost": 4122.0,
+      "sku": "Premium",
+      "cost_factors": [
+        "Front Door Tier: Premium",
+        "Routing Rules: 5",
+        "Data Transfer: 100 GB"
+      ],
+      "assumptions": [
+        "Estimated 5 routing rules",
+        "Estimated 100 GB data transfer per month",
+        "Standard configuration without WAF"
+      ],
+      "environment_multiplier": 1.0,
+      "region_multiplier": 1.0
+    },
+    {
+      "resource_name": "Application Gateway",
+      "resource_type": "Microsoft.Network/applicationGateways",
+      "monthly_cost": 22.7,
+      "yearly_cost": 272.4,
+      "sku": "Standard_Small",
+      "cost_factors": [
+        "Gateway Size: Standard_Small",
+        "Data Processing: 100 GB"
+      ],
+      "assumptions": [
+        "Estimated 100 GB data processing per month",
+        "Standard configuration",
+        "No additional features"
+      ],
+      "environment_multiplier": 1.0,
+      "region_multiplier": 1.0
+    },
+    {
+      "resource_name": "Virtual Network",
+      "resource_type": "Microsoft.Network/virtualNetworks",
+      "monthly_cost": 0.0,
+      "yearly_cost": 0.0,
+      "sku": "Standard",
+      "cost_factors": [
+        "Virtual Network: Free",
+        "Subnets: Free",
+        "VNet Peering: Additional cost if configured"
+      ],
+      "assumptions": [
+        "Virtual Network itself is free",
+        "Costs may apply for VNet peering, gateways, and data transfer",
+        "Standard configuration"
+      ]
+    },
+    {
+      "resource_name": "App Service",
+      "resource_type": "Microsoft.Web/sites",
+      "monthly_cost": 0,
+      "yearly_cost": 0,
+      "sku": "Unknown",
+      "cost_factors": [],
+      "assumptions": [],
+      "error": "Cost estimation failed: 'AzureCostEstimator' object has no attribute '_get_default_app_service_sku'"
+    },
+    {
+      "resource_name": "SQL Database",
+      "resource_type": "Microsoft.Sql/servers/databases",
+      "monthly_cost": 0,
+      "yearly_cost": 0,
+      "sku": "Unknown",
+      "cost_factors": [],
+      "assumptions": [],
+      "error": "Cost estimation failed: 'AzureCostEstimator' object has no attribute '_get_default_sql_sku'"
+    },
+    {
+      "resource_name": "Storage Account",
+      "resource_type": "Microsoft.Storage/storageAccounts",
+      "monthly_cost": 0,
+      "yearly_cost": 0,
+      "sku": "Unknown",
+      "cost_factors": [],
+      "assumptions": [],
+      "error": "Cost estimation failed: 'AzureCostEstimator' object has no attribute '_get_estimated_storage_usage'"
+    },
+    {
+      "resource_name": "Key Vault",
+      "resource_type": "Microsoft.KeyVault/vaults",
+      "monthly_cost": 0,
+      "yearly_cost": 0,
+      "sku": "Unknown",
+      "cost_factors": [],
+      "assumptions": [],
+      "error": "Cost estimation failed: 'AzureCostEstimator' object has no attribute '_estimate_key_vault_cost'"
+    },
+    {
+      "resource_name": "Application Insights",
+      "resource_type": "Microsoft.Insights/components",
+      "monthly_cost": 34.5,
+      "yearly_cost": 414.0,
+      "sku": "Pay-as-you-go",
+      "cost_factors": [
+        "Data Ingestion: 20 GB",
+        "Data Retention: 90 days (free)",
+        "Pricing: First 5 GB free, then $2.30/GB"
+      ],
+      "assumptions": [
+        "Estimated 20 GB data ingestion per month",
+        "90 days data retention (free tier)",
+        "Standard telemetry collection"
+      ],
+      "environment_multiplier": 1.0,
+      "region_multiplier": 1.0
+    },
+    {
+      "resource_name": "Log Analytics",
+      "resource_type": "Microsoft.OperationalInsights/workspaces",
+      "monthly_cost": 103.49999999999999,
+      "yearly_cost": 1241.9999999999998,
+      "sku": "Per-GB",
+      "cost_factors": [
+        "Data Ingestion: 50 GB",
+        "Data Retention: 31 days (free)",
+        "Pricing: First 5 GB free, then $2.30/GB"
+      ],
+      "assumptions": [
+        "Estimated 50 GB data ingestion per month",
+        "31 days data retention (free tier)",
+        "Standard log collection from connected resources"
+      ],
+      "environment_multiplier": 1.0,
+      "region_multiplier": 1.0
+    }
+  ],
+  "cost_breakdown": {
+    "Compute": 0,
+    "Storage": 0,
+    "Networking": 0,
+    "Database": 0,
+    "Monitoring": 0,
+    "Security": 0,
+    "Other": 504.2
+  },
+  "recommendations": [],
+  "estimation_date": "2025-07-16T10:45:20.502353",
+  "debug_info": {
+    "total_resources_found": 9,
+    "architecture_keys": [
+      "components",
+      "relationships",
+      "network_topology",
+      "security_configuration",
+      "estimated_costs"
+    ],
+    "resources_with_costs": 4
+  },
+  "disclaimer": "Cost estimates are approximate and based on standard pricing. Actual costs may vary based on usage patterns, discounts, and current Azure pricing."
+}

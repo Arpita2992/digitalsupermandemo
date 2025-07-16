@@ -261,6 +261,41 @@ def list_samples():
     ]
     return jsonify({'samples': samples})
 
+@app.route('/policies')
+def policy_info():
+    """Get information about loaded policies"""
+    try:
+        policy_checker = get_policy_checker()
+        summary = policy_checker.get_policy_summary()
+        return jsonify({
+            'status': 'success',
+            'data': summary,
+            'message': f"Loaded {summary['total_policies']} policies across {len(summary['categories'])} categories"
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'Error retrieving policy information: {str(e)}'
+        }), 500
+
+@app.route('/policies/reload', methods=['POST'])
+def reload_policies():
+    """Reload policies from the policies folder"""
+    try:
+        policy_checker = get_policy_checker()
+        policy_checker.reload_policies()
+        summary = policy_checker.get_policy_summary()
+        return jsonify({
+            'status': 'success',
+            'data': summary,
+            'message': f"Policies reloaded successfully. {summary['total_policies']} policies loaded."
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'Error reloading policies: {str(e)}'
+        }), 500
+
 @app.route('/health')
 def health_check():
     return jsonify({'status': 'healthy'})

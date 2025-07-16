@@ -1,0 +1,53 @@
+{
+    "displayName": "Restrict GRS Storage Accounts in Development Subscriptions",
+    "policyType": "Custom",
+    "mode": "Indexed",
+    "description": "This policy prevents the use of Geo-Redundant Storage (GRS) for storage accounts in development subscriptions.",
+    "metadata": {
+        "version": "1.0.0",
+        "category": "Storage"
+    },
+    "parameters": {
+        "effect": {
+            "type": "String",
+            "metadata": {
+                "displayName": "Effect",
+                "description": "Effect of the policy"
+            },
+            "allowedValues": [
+                "Audit",
+                "Deny",
+                "Disabled"
+            ],
+            "defaultValue": "Audit"
+        },
+        "developmentSubscriptionIds": {
+            "type": "Array",
+            "metadata": {
+                "displayName": "Development Subscriptions",
+                "description": "List of subscription IDs considered as development"
+            }
+        }
+    },
+    "policyRule": {
+        "if": {
+            "allOf": [
+                {
+                    "field": "type",
+                    "equals": "Microsoft.Storage/storageAccounts"
+                },
+                {
+                    "field": "subscriptionId",
+                    "in": "[parameters('developmentSubscriptionIds')]"
+                },
+                {
+                    "field": "Microsoft.Storage/storageAccounts/sku.name",
+                    "equals": "Standard_GRS"
+                }
+            ]
+        },
+        "then": {
+            "effect": "[parameters('effect')]"
+        }
+    }
+}

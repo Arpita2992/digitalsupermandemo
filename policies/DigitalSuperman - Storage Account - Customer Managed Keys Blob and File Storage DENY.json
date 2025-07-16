@@ -1,0 +1,43 @@
+{
+    "displayName": "Storage Account - Customer Managed Keys Blob and File Storage DENY",
+    "description": "This Azure Policy denies the deployment of an Azure Storage Account when the 'Encryption type' setting is not set to 'Customer-managed keys'.",
+    "metadata": {
+        "version": "1.0.0",
+        "category": "Storage"
+    },
+    "mode": "All",
+    "parameters": {
+        "effect": {
+            "type": "String",
+            "metadata": {
+                "displayName": "Effect",
+                "description": "Deny, Audit or Disabled the execution of the Policy"
+            },
+            "allowedValues": [
+                "Deny",
+                "Audit",
+                "Disabled"
+            ],
+            "defaultValue": "Audit"
+        }
+    },
+    "policyRule": {
+        "if": {
+            "allOf": [
+                {
+                    "field": "type",
+                    "equals": "Microsoft.Storage/storageAccounts"
+                },
+                {
+                    "not": {
+                        "field": "Microsoft.Storage/storageAccounts/encryption.keySource",
+                        "equals": "Microsoft.Keyvault"
+                    }
+                }
+            ]
+        },
+        "then": {
+            "effect": "[parameters('effect')]"
+        }
+    }
+}

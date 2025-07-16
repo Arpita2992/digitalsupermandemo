@@ -1,0 +1,27 @@
+{
+    "displayName": "Allowed locations for resource groups",
+    "policyType": "BuiltIn",
+    "mode": "All",
+    "description": "This policy enables you to restrict the locations your organization can create resource groups in. Use to enforce your geo-compliance requirements.",
+    "metadata": {
+        "version": "1.0.0",
+        "category": "General"
+    },
+    "policyRule": {
+        "if": {
+            "allOf": [
+                {
+                    "field": "type",
+                    "equals": "Microsoft.Resources/subscriptions/resourceGroups"
+                },
+                {
+                    "field": "location",
+                    "notIn": ["westeurope", "swedencentral"]  // Hardcoded allowed locations
+                }
+            ]
+        },
+        "then": {
+            "effect": "deny"
+        }
+    }
+}

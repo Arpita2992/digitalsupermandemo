@@ -8,9 +8,10 @@ Transform your Azure architecture diagrams into production-ready infrastructure 
 - **Multi-Format Support**: PNG, JPG, PDF, XML, Draw.io, VSDX, SVG files
 - **Bicep Templates**: Generate modular, production-ready Bicep templates
 - **Azure DevOps Integration**: Create CI/CD pipelines for automated deployments
-- **Policy Compliance**: Validate architecture against Azure best practices
-- **Environment-Specific**: Support for development and production environments
-- **Complete Documentation**: Generate comprehensive deployment guides
+- **Policy Compliance**: Validate architecture against Azure best practices and custom policies
+- **Cost Estimation**: Generate detailed cost estimates for Azure resources
+- **Environment-Specific**: Support for development, staging, and production environments
+- **Complete Documentation**: Generate comprehensive deployment guides and cost reports
 
 ## 🤖 AI Agents
 
@@ -23,14 +24,22 @@ Transform your Azure architecture diagrams into production-ready infrastructure 
 ### 2. Policy Checker
 - Validates architecture against Microsoft Azure policies
 - Checks security, governance, and compliance requirements
+- Supports 41+ custom organizational policies
 - Provides environment-specific recommendations
-- Generates detailed compliance reports
+- Generates detailed compliance reports with custom policies table
 
 ### 3. Bicep Generator
 - Creates production-ready Bicep templates
 - Generates Azure DevOps YAML pipelines
 - Provides parameter files for different environments
 - Includes deployment scripts and documentation
+
+### 4. Cost Estimator
+- Estimates monthly and yearly costs for Azure resources
+- Provides environment-specific cost adjustments
+- Generates detailed cost breakdown by resource type
+- Includes cost optimization recommendations
+- Supports regional pricing variations
 
 ## 🛠️ Installation
 

@@ -1,0 +1,2643 @@
+[
+  {
+    "test_case": "Simple Web App",
+    "complexity": "Very Easy",
+    "success": true,
+    "components_found": 4,
+    "relationships_found": 5,
+    "components": [
+      {
+        "name": "App Service (Web App)",
+        "type": "Microsoft.Web/sites",
+        "configuration": {
+          "sku": "Standard",
+          "region": null,
+          "settings": {}
+        },
+        "dependencies": [
+          "Azure SQL Database",
+          "Application Gateway",
+          "Virtual Network"
+        ]
+      },
+      {
+        "name": "Azure SQL Database",
+        "type": "Microsoft.Sql/servers/databases",
+        "configuration": {
+          "sku": "Basic",
+          "region": null,
+          "settings": {}
+        },
+        "dependencies": [
+          "Virtual Network"
+        ]
+      },
+      {
+        "name": "Application Gateway",
+        "type": "Microsoft.Network/applicationGateways",
+        "configuration": {
+          "sku": null,
+          "region": null,
+          "settings": {
+            "load_balancing": true
+          }
+        },
+        "dependencies": [
+          "Virtual Network",
+          "App Service (Web App)"
+        ]
+      },
+      {
+        "name": "Virtual Network",
+        "type": "Microsoft.Network/virtualNetworks",
+        "configuration": {
+          "sku": null,
+          "region": null,
+          "settings": {
+            "subnets": 2
+          }
+        },
+        "dependencies": []
+      }
+    ],
+    "relationships": [
+      {
+        "source": "Application Gateway",
+        "target": "App Service (Web App)",
+        "type": "forwards_traffic_to",
+        "configuration": {
+          "load_balancing": true
+        }
+      },
+      {
+        "source": "App Service (Web App)",
+        "target": "Azure SQL Database",
+        "type": "connects_to",
+        "configuration": {}
+      },
+      {
+        "source": "Application Gateway",
+        "target": "Virtual Network",
+        "type": "deployed_in",
+        "configuration": {}
+      },
+      {
+        "source": "App Service (Web App)",
+        "target": "Virtual Network",
+        "type": "integrated_with",
+        "configuration": {}
+      },
+      {
+        "source": "Azure SQL Database",
+        "target": "Virtual Network",
+        "type": "accessible_from",
+        "configuration": {}
+      }
+    ],
+    "accuracy": 100.0,
+    "expected_components": [
+      "App Service",
+      "SQL Database",
+      "Application Gateway",
+      "Virtual Network"
+    ]
+  },
+  {
+    "test_case": "E-commerce Platform",
+    "complexity": "Easy",
+    "success": true,
+    "components_found": 8,
+    "relationships_found": 8,
+    "components": [
+      {
+        "name": "Azure Front Door",
+        "type": "FrontDoor",
+        "configuration": {
+          "sku": "Standard/Premium (unspecified)",
+          "region": "Global",
+          "settings": {
+            "load_balancing": "Global HTTP/HTTPS",
+            "caching": "Optional"
+          }
+        },
+        "dependencies": [
+          "Frontend Web App"
+        ]
+      },
+      {
+        "name": "App Service Plan",
+        "type": "AppServicePlan",
+        "configuration": {
+          "sku": "Unspecified (likely Standard/Premium for production)",
+          "region": "Unspecified",
+          "settings": {
+            "instance_count": 2
+          }
+        },
+        "dependencies": [
+          "Frontend Web App",
+          "Backend API Web App"
+        ]
+      },
+      {
+        "name": "Frontend Web App",
+        "type": "WebApp",
+        "configuration": {
+          "sku": "Inherited from App Service Plan",
+          "region": "Unspecified",
+          "settings": {
+            "framework": "React"
+          }
+        },
+        "dependencies": [
+          "App Service Plan",
+          "Azure Storage Account",
+          "Azure Key Vault",
+          "Application Insights"
+        ]
+      },
+      {
+        "name": "Backend API Web App",
+        "type": "WebApp",
+        "configuration": {
+          "sku": "Inherited from App Service Plan",
+          "region": "Unspecified",
+          "settings": {
+            "framework": "Unspecified (API)"
+          }
+        },
+        "dependencies": [
+          "App Service Plan",
+          "Azure SQL Database",
+          "Azure Key Vault",
+          "Application Insights"
+        ]
+      },
+      {
+        "name": "Azure SQL Database",
+        "type": "SQLDatabase",
+        "configuration": {
+          "sku": "Unspecified (likely Business Critical/General Purpose)",
+          "region": "Unspecified",
+          "settings": {
+            "failover_group": true
+          }
+        },
+        "dependencies": []
+      },
+      {
+        "name": "Azure Storage Account",
+        "type": "StorageAccount",
+        "configuration": {
+          "sku": "Unspecified (likely Standard/Hot)",
+          "region": "Unspecified",
+          "settings": {
+            "usage": "Static assets"
+          }
+        },
+        "dependencies": []
+      },
+      {
+        "name": "Azure Key Vault",
+        "type": "KeyVault",
+        "configuration": {
+          "sku": "Standard",
+          "region": "Unspecified",
+          "settings": {
+            "usage": "Secrets management"
+          }
+        },
+        "dependencies": []
+      },
+      {
+        "name": "Application Insights",
+        "type": "ApplicationInsights",
+        "configuration": {
+          "sku": "Unspecified (Standard)",
+          "region": "Unspecified",
+          "settings": {
+            "monitoring": "Enabled"
+          }
+        },
+        "dependencies": []
+      }
+    ],
+    "relationships": [
+      {
+        "source": "Azure Front Door",
+        "target": "Frontend Web App",
+        "type": "routes_traffic_to",
+        "configuration": {}
+      },
+      {
+        "source": "Frontend Web App",
+        "target": "Backend API Web App",
+        "type": "api_calls",
+        "configuration": {}
+      },
+      {
+        "source": "Backend API Web App",
+        "target": "Azure SQL Database",
+        "type": "reads_writes_data",
+        "configuration": {}
+      },
+      {
+        "source": "Frontend Web App",
+        "target": "Azure Storage Account",
+        "type": "reads_static_assets",
+        "configuration": {}
+      },
+      {
+        "source": "Frontend Web App",
+        "target": "Azure Key Vault",
+        "type": "retrieves_secrets",
+        "configuration": {}
+      },
+      {
+        "source": "Backend API Web App",
+        "target": "Azure Key Vault",
+        "type": "retrieves_secrets",
+        "configuration": {}
+      },
+      {
+        "source": "Frontend Web App",
+        "target": "Application Insights",
+        "type": "sends_telemetry",
+        "configuration": {}
+      },
+      {
+        "source": "Backend API Web App",
+        "target": "Application Insights",
+        "type": "sends_telemetry",
+        "configuration": {}
+      }
+    ],
+    "accuracy": 100.0,
+    "expected_components": [
+      "Front Door",
+      "App Service",
+      "SQL Database",
+      "Storage Account",
+      "Key Vault",
+      "Application Insights"
+    ]
+  },
+  {
+    "test_case": "Microservices Architecture",
+    "complexity": "Medium",
+    "success": true,
+    "components_found": 12,
+    "relationships_found": 6,
+    "components": [
+      {
+        "name": "Azure Kubernetes Service (AKS)",
+        "type": "Microsoft.ContainerService/managedClusters",
+        "configuration": {
+          "sku": "Standard",
+          "region": "TBD",
+          "settings": {
+            "node_count": 3,
+            "node_size": "Standard_DS2_v2",
+            "network_plugin": "azure"
+          }
+        },
+        "dependencies": [
+          "Azure Container Registry",
+          "Azure Service Bus",
+          "Azure Cosmos DB",
+          "Azure Cache for Redis",
+          "Azure API Management",
+          "Azure Monitor and Log Analytics"
+        ]
+      },
+      {
+        "name": "Azure Container Registry",
+        "type": "Microsoft.ContainerRegistry/registries",
+        "configuration": {
+          "sku": "Standard",
+          "region": "TBD",
+          "settings": {}
+        },
+        "dependencies": []
+      },
+      {
+        "name": "User Service",
+        "type": "Microservice (AKS Deployment)",
+        "configuration": {
+          "sku": "N/A",
+          "region": "TBD",
+          "settings": {}
+        },
+        "dependencies": [
+          "Azure Service Bus",
+          "Azure Cosmos DB",
+          "Azure Cache for Redis"
+        ]
+      },
+      {
+        "name": "Product Service",
+        "type": "Microservice (AKS Deployment)",
+        "configuration": {
+          "sku": "N/A",
+          "region": "TBD",
+          "settings": {}
+        },
+        "dependencies": [
+          "Azure Service Bus",
+          "Azure Cosmos DB",
+          "Azure Cache for Redis"
+        ]
+      },
+      {
+        "name": "Order Service",
+        "type": "Microservice (AKS Deployment)",
+        "configuration": {
+          "sku": "N/A",
+          "region": "TBD",
+          "settings": {}
+        },
+        "dependencies": [
+          "Azure Service Bus",
+          "Azure Cosmos DB",
+          "Azure Cache for Redis"
+        ]
+      },
+      {
+        "name": "Payment Service",
+        "type": "Microservice (AKS Deployment)",
+        "configuration": {
+          "sku": "N/A",
+          "region": "TBD",
+          "settings": {}
+        },
+        "dependencies": [
+          "Azure Service Bus",
+          "Azure Cosmos DB",
+          "Azure Cache for Redis"
+        ]
+      },
+      {
+        "name": "Notification Service",
+        "type": "Microservice (AKS Deployment)",
+        "configuration": {
+          "sku": "N/A",
+          "region": "TBD",
+          "settings": {}
+        },
+        "dependencies": [
+          "Azure Service Bus",
+          "Azure Cosmos DB",
+          "Azure Cache for Redis"
+        ]
+      },
+      {
+        "name": "Azure Service Bus",
+        "type": "Microsoft.ServiceBus/namespaces",
+        "configuration": {
+          "sku": "Standard",
+          "region": "TBD",
+          "settings": {}
+        },
+        "dependencies": []
+      },
+      {
+        "name": "Azure Cosmos DB",
+        "type": "Microsoft.DocumentDB/databaseAccounts",
+        "configuration": {
+          "sku": "Standard (NoSQL API)",
+          "region": "TBD",
+          "settings": {}
+        },
+        "dependencies": []
+      },
+      {
+        "name": "Azure Cache for Redis",
+        "type": "Microsoft.Cache/Redis",
+        "configuration": {
+          "sku": "Standard",
+          "region": "TBD",
+          "settings": {}
+        },
+        "dependencies": []
+      },
+      {
+        "name": "Azure API Management",
+        "type": "Microsoft.ApiManagement/service",
+        "configuration": {
+          "sku": "Developer",
+          "region": "TBD",
+          "settings": {}
+        },
+        "dependencies": [
+          "AKS"
+        ]
+      },
+      {
+        "name": "Azure Monitor and Log Analytics",
+        "type": "Microsoft.OperationalInsights/workspaces",
+        "configuration": {
+          "sku": "PerGB2018",
+          "region": "TBD",
+          "settings": {}
+        },
+        "dependencies": [
+          "AKS"
+        ]
+      }
+    ],
+    "relationships": [
+      {
+        "source": "Azure API Management",
+        "target": "AKS",
+        "type": "API Gateway",
+        "configuration": {}
+      },
+      {
+        "source": "AKS",
+        "target": "Azure Container Registry",
+        "type": "Image Pull",
+        "configuration": {}
+      },
+      {
+        "source": "Microservices",
+        "target": "Azure Service Bus",
+        "type": "Messaging (Pub/Sub, Queues, Topics)",
+        "configuration": {}
+      },
+      {
+        "source": "Microservices",
+        "target": "Azure Cosmos DB",
+        "type": "NoSQL Data Storage",
+        "configuration": {}
+      },
+      {
+        "source": "Microservices",
+        "target": "Azure Cache for Redis",
+        "type": "Caching",
+        "configuration": {}
+      },
+      {
+        "source": "AKS",
+        "target": "Azure Monitor and Log Analytics",
+        "type": "Monitoring/Logging",
+        "configuration": {}
+      }
+    ],
+    "accuracy": 85.71428571428571,
+    "expected_components": [
+      "AKS",
+      "Container Registry",
+      "Service Bus",
+      "Cosmos DB",
+      "Redis Cache",
+      "API Management",
+      "Monitor"
+    ]
+  },
+  {
+    "test_case": "Data Analytics Platform",
+    "complexity": "Medium",
+    "success": true,
+    "components_found": 8,
+    "relationships_found": 12,
+    "components": [
+      {
+        "name": "Azure Data Factory",
+        "type": "Data Integration",
+        "configuration": {
+          "sku": "Standard (default, not specified)",
+          "region": "Not specified",
+          "settings": {}
+        },
+        "dependencies": [
+          "Azure Data Lake Storage Gen2",
+          "Azure Synapse Analytics",
+          "Azure Event Hub"
+        ]
+      },
+      {
+        "name": "Azure Data Lake Storage Gen2",
+        "type": "Storage",
+        "configuration": {
+          "sku": "Standard (default, not specified)",
+          "region": "Not specified",
+          "settings": {
+            "storage_type": "Hierarchical namespace enabled"
+          }
+        },
+        "dependencies": []
+      },
+      {
+        "name": "Azure Synapse Analytics",
+        "type": "Analytics",
+        "configuration": {
+          "sku": "Dedicated SQL Pool (default, not specified)",
+          "region": "Not specified",
+          "settings": {}
+        },
+        "dependencies": [
+          "Azure Data Lake Storage Gen2"
+        ]
+      },
+      {
+        "name": "Azure Stream Analytics",
+        "type": "Stream Processing",
+        "configuration": {
+          "sku": "Standard (default, not specified)",
+          "region": "Not specified",
+          "settings": {}
+        },
+        "dependencies": [
+          "Azure Event Hub",
+          "Azure Data Lake Storage Gen2",
+          "Azure Synapse Analytics"
+        ]
+      },
+      {
+        "name": "Azure Machine Learning Workspace",
+        "type": "Machine Learning",
+        "configuration": {
+          "sku": "Basic/Enterprise (not specified)",
+          "region": "Not specified",
+          "settings": {}
+        },
+        "dependencies": [
+          "Azure Data Lake Storage Gen2",
+          "Azure Synapse Analytics"
+        ]
+      },
+      {
+        "name": "Power BI",
+        "type": "Visualization",
+        "configuration": {
+          "sku": "Pro/Premium (not specified)",
+          "region": "Not specified",
+          "settings": {}
+        },
+        "dependencies": [
+          "Azure Synapse Analytics",
+          "Azure Machine Learning Workspace"
+        ]
+      },
+      {
+        "name": "Azure Event Hub",
+        "type": "Event Ingestion",
+        "configuration": {
+          "sku": "Standard (default, not specified)",
+          "region": "Not specified",
+          "settings": {}
+        },
+        "dependencies": []
+      },
+      {
+        "name": "Azure Functions",
+        "type": "Serverless Compute",
+        "configuration": {
+          "sku": "Consumption Plan (default, not specified)",
+          "region": "Not specified",
+          "settings": {}
+        },
+        "dependencies": [
+          "Azure Data Lake Storage Gen2",
+          "Azure Synapse Analytics"
+        ]
+      }
+    ],
+    "relationships": [
+      {
+        "source": "Azure Event Hub",
+        "target": "Azure Stream Analytics",
+        "type": "data_ingest",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Stream Analytics",
+        "target": "Azure Data Lake Storage Gen2",
+        "type": "data_output",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Stream Analytics",
+        "target": "Azure Synapse Analytics",
+        "type": "data_output",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Data Factory",
+        "target": "Azure Data Lake Storage Gen2",
+        "type": "data_source",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Data Factory",
+        "target": "Azure Synapse Analytics",
+        "type": "data_sink",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Data Factory",
+        "target": "Azure Event Hub",
+        "type": "data_source",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Machine Learning Workspace",
+        "target": "Azure Data Lake Storage Gen2",
+        "type": "data_source",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Machine Learning Workspace",
+        "target": "Azure Synapse Analytics",
+        "type": "data_source",
+        "configuration": {}
+      },
+      {
+        "source": "Power BI",
+        "target": "Azure Synapse Analytics",
+        "type": "data_source",
+        "configuration": {}
+      },
+      {
+        "source": "Power BI",
+        "target": "Azure Machine Learning Workspace",
+        "type": "data_source",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Functions",
+        "target": "Azure Data Lake Storage Gen2",
+        "type": "data_processing",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Functions",
+        "target": "Azure Synapse Analytics",
+        "type": "data_processing",
+        "configuration": {}
+      }
+    ],
+    "accuracy": 100.0,
+    "expected_components": [
+      "Data Factory",
+      "Data Lake Storage",
+      "Synapse Analytics",
+      "Stream Analytics",
+      "Machine Learning",
+      "Event Hub",
+      "Functions"
+    ]
+  },
+  {
+    "test_case": "IoT Solution",
+    "complexity": "Medium-Hard",
+    "success": true,
+    "components_found": 9,
+    "relationships_found": 10,
+    "components": [
+      {
+        "name": "Azure IoT Hub",
+        "type": "IoT Hub",
+        "configuration": {
+          "sku": "Standard (assumed)",
+          "region": "Not specified",
+          "settings": {}
+        },
+        "dependencies": [
+          "Azure IoT Central",
+          "Azure Stream Analytics",
+          "Azure Event Grid"
+        ]
+      },
+      {
+        "name": "Azure IoT Central",
+        "type": "IoT Central Application",
+        "configuration": {
+          "sku": "Standard (assumed)",
+          "region": "Not specified",
+          "settings": {}
+        },
+        "dependencies": [
+          "Azure IoT Hub"
+        ]
+      },
+      {
+        "name": "Azure Stream Analytics",
+        "type": "Stream Analytics Job",
+        "configuration": {
+          "sku": "Standard (assumed)",
+          "region": "Not specified",
+          "settings": {}
+        },
+        "dependencies": [
+          "Azure IoT Hub",
+          "Azure Time Series Insights",
+          "Azure Functions",
+          "Azure Cosmos DB"
+        ]
+      },
+      {
+        "name": "Azure Time Series Insights",
+        "type": "Time Series Insights Environment",
+        "configuration": {
+          "sku": "Standard (assumed)",
+          "region": "Not specified",
+          "settings": {}
+        },
+        "dependencies": [
+          "Azure Stream Analytics"
+        ]
+      },
+      {
+        "name": "Azure Functions",
+        "type": "Function App",
+        "configuration": {
+          "sku": "Consumption (assumed)",
+          "region": "Not specified",
+          "settings": {}
+        },
+        "dependencies": [
+          "Azure Stream Analytics",
+          "Azure Event Grid",
+          "Azure Cosmos DB",
+          "Azure Digital Twins"
+        ]
+      },
+      {
+        "name": "Azure Cosmos DB",
+        "type": "Cosmos DB Account",
+        "configuration": {
+          "sku": "Standard (assumed)",
+          "region": "Not specified",
+          "settings": {}
+        },
+        "dependencies": [
+          "Azure Stream Analytics",
+          "Azure Functions"
+        ]
+      },
+      {
+        "name": "Azure Event Grid",
+        "type": "Event Grid Topic",
+        "configuration": {
+          "sku": "Standard (assumed)",
+          "region": "Not specified",
+          "settings": {}
+        },
+        "dependencies": [
+          "Azure IoT Hub",
+          "Azure Functions",
+          "Azure Logic Apps"
+        ]
+      },
+      {
+        "name": "Azure Logic Apps",
+        "type": "Logic App",
+        "configuration": {
+          "sku": "Standard (assumed)",
+          "region": "Not specified",
+          "settings": {}
+        },
+        "dependencies": [
+          "Azure Event Grid"
+        ]
+      },
+      {
+        "name": "Azure Digital Twins",
+        "type": "Digital Twins Instance",
+        "configuration": {
+          "sku": "Standard (assumed)",
+          "region": "Not specified",
+          "settings": {}
+        },
+        "dependencies": [
+          "Azure Functions"
+        ]
+      }
+    ],
+    "relationships": [
+      {
+        "source": "Azure IoT Hub",
+        "target": "Azure IoT Central",
+        "type": "device_management",
+        "configuration": {}
+      },
+      {
+        "source": "Azure IoT Hub",
+        "target": "Azure Stream Analytics",
+        "type": "telemetry_ingest",
+        "configuration": {}
+      },
+      {
+        "source": "Azure IoT Hub",
+        "target": "Azure Event Grid",
+        "type": "event_routing",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Stream Analytics",
+        "target": "Azure Time Series Insights",
+        "type": "data_output",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Stream Analytics",
+        "target": "Azure Functions",
+        "type": "event_processing",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Stream Analytics",
+        "target": "Azure Cosmos DB",
+        "type": "metadata_storage",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Event Grid",
+        "target": "Azure Functions",
+        "type": "event_trigger",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Event Grid",
+        "target": "Azure Logic Apps",
+        "type": "event_trigger",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Functions",
+        "target": "Azure Cosmos DB",
+        "type": "data_write",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Functions",
+        "target": "Azure Digital Twins",
+        "type": "model_update",
+        "configuration": {}
+      }
+    ],
+    "accuracy": 100.0,
+    "expected_components": [
+      "IoT Hub",
+      "IoT Central",
+      "Stream Analytics",
+      "Time Series Insights",
+      "Functions",
+      "Cosmos DB",
+      "Event Grid",
+      "Logic Apps",
+      "Digital Twins"
+    ]
+  },
+  {
+    "test_case": "Multi-Tier Enterprise App",
+    "complexity": "Hard",
+    "success": true,
+    "components_found": 17,
+    "relationships_found": 13,
+    "components": [
+      {
+        "name": "Azure Traffic Manager",
+        "type": "TrafficManager",
+        "configuration": {
+          "sku": "Standard",
+          "region": "Global",
+          "settings": {
+            "routing_method": "DNS-based",
+            "endpoints": [
+              "Azure Front Door"
+            ]
+          }
+        },
+        "dependencies": [
+          "Azure Front Door"
+        ]
+      },
+      {
+        "name": "Azure Front Door",
+        "type": "FrontDoor",
+        "configuration": {
+          "sku": "Standard/Premium",
+          "region": "Global",
+          "settings": {
+            "WAF_enabled": true,
+            "backend_pools": [
+              "Application Gateway"
+            ]
+          }
+        },
+        "dependencies": [
+          "Application Gateway"
+        ]
+      },
+      {
+        "name": "Application Gateway",
+        "type": "ApplicationGateway",
+        "configuration": {
+          "sku": "Standard_v2/WAF_v2",
+          "region": "TBD",
+          "settings": {
+            "SSL_termination": true,
+            "backend_pools": [
+              "Web Tier VMSS"
+            ]
+          }
+        },
+        "dependencies": [
+          "Web Tier VMSS"
+        ]
+      },
+      {
+        "name": "Azure Virtual Network",
+        "type": "VirtualNetwork",
+        "configuration": {
+          "sku": "N/A",
+          "region": "TBD",
+          "settings": {
+            "address_space": "TBD",
+            "subnets": [
+              "DMZ Subnet",
+              "Web Tier Subnet",
+              "Application Tier Subnet",
+              "Database Tier Subnet"
+            ]
+          }
+        },
+        "dependencies": [
+          "DMZ Subnet",
+          "Web Tier Subnet",
+          "Application Tier Subnet",
+          "Database Tier Subnet"
+        ]
+      },
+      {
+        "name": "DMZ Subnet",
+        "type": "Subnet",
+        "configuration": {
+          "sku": "N/A",
+          "region": "TBD",
+          "settings": {
+            "nsg": "DMZ NSG"
+          }
+        },
+        "dependencies": [
+          "DMZ NSG"
+        ]
+      },
+      {
+        "name": "DMZ NSG",
+        "type": "NetworkSecurityGroup",
+        "configuration": {
+          "sku": "N/A",
+          "region": "TBD",
+          "settings": {
+            "rules": "Custom inbound/outbound rules"
+          }
+        },
+        "dependencies": []
+      },
+      {
+        "name": "Web Tier Subnet",
+        "type": "Subnet",
+        "configuration": {
+          "sku": "N/A",
+          "region": "TBD",
+          "settings": {
+            "vmss": "Web Tier VMSS"
+          }
+        },
+        "dependencies": [
+          "Web Tier VMSS"
+        ]
+      },
+      {
+        "name": "Web Tier VMSS",
+        "type": "VirtualMachineScaleSet",
+        "configuration": {
+          "sku": "Standard_DS2_v2 (example)",
+          "region": "TBD",
+          "settings": {
+            "autoscale": true,
+            "instances": "TBD"
+          }
+        },
+        "dependencies": []
+      },
+      {
+        "name": "Application Tier Subnet",
+        "type": "Subnet",
+        "configuration": {
+          "sku": "N/A",
+          "region": "TBD",
+          "settings": {
+            "service_fabric": "App Tier Service Fabric"
+          }
+        },
+        "dependencies": [
+          "App Tier Service Fabric"
+        ]
+      },
+      {
+        "name": "App Tier Service Fabric",
+        "type": "ServiceFabricCluster",
+        "configuration": {
+          "sku": "Standard",
+          "region": "TBD",
+          "settings": {
+            "node_count": "TBD"
+          }
+        },
+        "dependencies": []
+      },
+      {
+        "name": "Database Tier Subnet",
+        "type": "Subnet",
+        "configuration": {
+          "sku": "N/A",
+          "region": "TBD",
+          "settings": {
+            "sql_always_on": "SQL Always On Cluster"
+          }
+        },
+        "dependencies": [
+          "SQL Always On Cluster"
+        ]
+      },
+      {
+        "name": "SQL Always On Cluster",
+        "type": "SQLServer",
+        "configuration": {
+          "sku": "SQL Managed Instance/VMs",
+          "region": "TBD",
+          "settings": {
+            "high_availability": "Always On"
+          }
+        },
+        "dependencies": []
+      },
+      {
+        "name": "Azure Load Balancer",
+        "type": "LoadBalancer",
+        "configuration": {
+          "sku": "Standard",
+          "region": "TBD",
+          "settings": {
+            "type": "Internal",
+            "backend_pools": [
+              "Web Tier VMSS",
+              "App Tier Service Fabric"
+            ]
+          }
+        },
+        "dependencies": [
+          "Web Tier VMSS",
+          "App Tier Service Fabric"
+        ]
+      },
+      {
+        "name": "Azure VPN Gateway",
+        "type": "VPNGateway",
+        "configuration": {
+          "sku": "VpnGw1+",
+          "region": "TBD",
+          "settings": {
+            "type": "Route-based",
+            "connection": "Hybrid"
+          }
+        },
+        "dependencies": []
+      },
+      {
+        "name": "Azure ExpressRoute",
+        "type": "ExpressRoute",
+        "configuration": {
+          "sku": "Standard/Premium",
+          "region": "TBD",
+          "settings": {
+            "bandwidth": "TBD",
+            "peering": "Private"
+          }
+        },
+        "dependencies": []
+      },
+      {
+        "name": "Azure Active Directory",
+        "type": "ActiveDirectory",
+        "configuration": {
+          "sku": "P1/P2",
+          "region": "Global",
+          "settings": {
+            "authentication": "Enterprise"
+          }
+        },
+        "dependencies": []
+      },
+      {
+        "name": "Azure Backup",
+        "type": "Backup",
+        "configuration": {
+          "sku": "Standard",
+          "region": "TBD",
+          "settings": {
+            "protected_items": [
+              "SQL Always On Cluster",
+              "VMSS",
+              "Service Fabric"
+            ]
+          }
+        },
+        "dependencies": [
+          "SQL Always On Cluster",
+          "Web Tier VMSS",
+          "App Tier Service Fabric"
+        ]
+      }
+    ],
+    "relationships": [
+      {
+        "source": "Azure Traffic Manager",
+        "target": "Azure Front Door",
+        "type": "dns_routing",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Front Door",
+        "target": "Application Gateway",
+        "type": "http_https_forwarding",
+        "configuration": {
+          "waf_enabled": true
+        }
+      },
+      {
+        "source": "Application Gateway",
+        "target": "Web Tier VMSS",
+        "type": "load_balancing",
+        "configuration": {
+          "ssl_termination": true
+        }
+      },
+      {
+        "source": "Web Tier VMSS",
+        "target": "App Tier Service Fabric",
+        "type": "internal_communication",
+        "configuration": {}
+      },
+      {
+        "source": "App Tier Service Fabric",
+        "target": "SQL Always On Cluster",
+        "type": "database_connection",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Load Balancer",
+        "target": "Web Tier VMSS",
+        "type": "internal_load_balancing",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Load Balancer",
+        "target": "App Tier Service Fabric",
+        "type": "internal_load_balancing",
+        "configuration": {}
+      },
+      {
+        "source": "Azure VPN Gateway",
+        "target": "Azure Virtual Network",
+        "type": "hybrid_connectivity",
+        "configuration": {}
+      },
+      {
+        "source": "Azure ExpressRoute",
+        "target": "Azure Virtual Network",
+        "type": "dedicated_connectivity",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Active Directory",
+        "target": "All Application Tiers",
+        "type": "authentication",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Backup",
+        "target": "SQL Always On Cluster",
+        "type": "backup",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Backup",
+        "target": "Web Tier VMSS",
+        "type": "backup",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Backup",
+        "target": "App Tier Service Fabric",
+        "type": "backup",
+        "configuration": {}
+      }
+    ],
+    "accuracy": 83.33333333333334,
+    "expected_components": [
+      "Traffic Manager",
+      "Front Door",
+      "Application Gateway",
+      "Virtual Network",
+      "VM Scale Sets",
+      "Service Fabric",
+      "SQL Database",
+      "Load Balancer",
+      "VPN Gateway",
+      "ExpressRoute",
+      "Active Directory",
+      "Backup"
+    ]
+  },
+  {
+    "test_case": "Global SaaS Platform",
+    "complexity": "Hard",
+    "success": true,
+    "components_found": 13,
+    "relationships_found": 24,
+    "components": [
+      {
+        "name": "Azure Front Door",
+        "type": "FrontDoor",
+        "configuration": {
+          "sku": "Standard/Premium",
+          "region": "Global",
+          "settings": {
+            "backends": [
+              "East US App Service",
+              "West Europe App Service",
+              "Southeast Asia App Service"
+            ],
+            "health_probes": true,
+            "WAF": true
+          }
+        },
+        "dependencies": [
+          "Azure App Service",
+          "Azure CDN"
+        ]
+      },
+      {
+        "name": "Azure CDN",
+        "type": "CDN",
+        "configuration": {
+          "sku": "Standard/Premium",
+          "region": "Global",
+          "settings": {
+            "origin": "App Service/Storage",
+            "caching_rules": "Static content"
+          }
+        },
+        "dependencies": [
+          "Azure App Service"
+        ]
+      },
+      {
+        "name": "Azure App Service (East US)",
+        "type": "AppService",
+        "configuration": {
+          "sku": "PremiumV3 (auto-scaling)",
+          "region": "East US",
+          "settings": {
+            "auto_scaling": true,
+            "full_stack": true
+          }
+        },
+        "dependencies": [
+          "Azure SQL Database (Primary)",
+          "Azure Cosmos DB",
+          "Azure Search",
+          "Azure Service Bus",
+          "Azure Key Vault",
+          "Azure Application Insights"
+        ]
+      },
+      {
+        "name": "Azure App Service (West Europe)",
+        "type": "AppService",
+        "configuration": {
+          "sku": "PremiumV3 (DR)",
+          "region": "West Europe",
+          "settings": {
+            "disaster_recovery": true
+          }
+        },
+        "dependencies": [
+          "Azure SQL Database (Geo-Replica)",
+          "Azure Cosmos DB",
+          "Azure Search",
+          "Azure Service Bus",
+          "Azure Key Vault",
+          "Azure Application Insights"
+        ]
+      },
+      {
+        "name": "Azure App Service (Southeast Asia)",
+        "type": "AppService",
+        "configuration": {
+          "sku": "PremiumV3 (Read Replica)",
+          "region": "Southeast Asia",
+          "settings": {
+            "read_replica": true
+          }
+        },
+        "dependencies": [
+          "Azure SQL Database (Read Replica)",
+          "Azure Cosmos DB",
+          "Azure Search",
+          "Azure Service Bus",
+          "Azure Key Vault",
+          "Azure Application Insights"
+        ]
+      },
+      {
+        "name": "Azure SQL Database (Primary)",
+        "type": "SQLDatabase",
+        "configuration": {
+          "sku": "Business Critical/General Purpose",
+          "region": "East US",
+          "settings": {
+            "geo_replication": [
+              "West Europe",
+              "Southeast Asia"
+            ]
+          }
+        },
+        "dependencies": []
+      },
+      {
+        "name": "Azure SQL Database (Geo-Replica)",
+        "type": "SQLDatabase",
+        "configuration": {
+          "sku": "Geo-Replica",
+          "region": "West Europe",
+          "settings": {
+            "replica_type": "DR"
+          }
+        },
+        "dependencies": [
+          "Azure SQL Database (Primary)"
+        ]
+      },
+      {
+        "name": "Azure SQL Database (Read Replica)",
+        "type": "SQLDatabase",
+        "configuration": {
+          "sku": "Read Replica",
+          "region": "Southeast Asia",
+          "settings": {
+            "replica_type": "Read"
+          }
+        },
+        "dependencies": [
+          "Azure SQL Database (Primary)"
+        ]
+      },
+      {
+        "name": "Azure Cosmos DB",
+        "type": "CosmosDB",
+        "configuration": {
+          "sku": "Multi-region Write/Read",
+          "region": "Global",
+          "settings": {
+            "global_distribution": true,
+            "multi-region_writes": true
+          }
+        },
+        "dependencies": []
+      },
+      {
+        "name": "Azure Search",
+        "type": "CognitiveSearch",
+        "configuration": {
+          "sku": "Standard",
+          "region": "Multi-region",
+          "settings": {
+            "full_text_search": true
+          }
+        },
+        "dependencies": []
+      },
+      {
+        "name": "Azure Service Bus",
+        "type": "ServiceBus",
+        "configuration": {
+          "sku": "Premium",
+          "region": "Multi-region",
+          "settings": {
+            "geo_disaster_recovery": true
+          }
+        },
+        "dependencies": []
+      },
+      {
+        "name": "Azure Key Vault",
+        "type": "KeyVault",
+        "configuration": {
+          "sku": "Standard/Premium",
+          "region": "Multi-region",
+          "settings": {
+            "cross_region_replication": true
+          }
+        },
+        "dependencies": []
+      },
+      {
+        "name": "Azure Application Insights",
+        "type": "ApplicationInsights",
+        "configuration": {
+          "sku": "Standard",
+          "region": "Multi-region",
+          "settings": {
+            "multi_region_monitoring": true
+          }
+        },
+        "dependencies": []
+      }
+    ],
+    "relationships": [
+      {
+        "source": "Azure Front Door",
+        "target": "Azure App Service (East US)",
+        "type": "load_balancing",
+        "configuration": {
+          "health_probe": true
+        }
+      },
+      {
+        "source": "Azure Front Door",
+        "target": "Azure App Service (West Europe)",
+        "type": "load_balancing",
+        "configuration": {
+          "failover": true
+        }
+      },
+      {
+        "source": "Azure Front Door",
+        "target": "Azure App Service (Southeast Asia)",
+        "type": "load_balancing",
+        "configuration": {
+          "read_replica": true
+        }
+      },
+      {
+        "source": "Azure CDN",
+        "target": "Azure App Service (East US)",
+        "type": "origin",
+        "configuration": {
+          "static_content": true
+        }
+      },
+      {
+        "source": "Azure App Service (East US)",
+        "target": "Azure SQL Database (Primary)",
+        "type": "database_connection",
+        "configuration": {}
+      },
+      {
+        "source": "Azure App Service (West Europe)",
+        "target": "Azure SQL Database (Geo-Replica)",
+        "type": "database_connection",
+        "configuration": {}
+      },
+      {
+        "source": "Azure App Service (Southeast Asia)",
+        "target": "Azure SQL Database (Read Replica)",
+        "type": "database_connection",
+        "configuration": {}
+      },
+      {
+        "source": "Azure SQL Database (Primary)",
+        "target": "Azure SQL Database (Geo-Replica)",
+        "type": "geo_replication",
+        "configuration": {}
+      },
+      {
+        "source": "Azure SQL Database (Primary)",
+        "target": "Azure SQL Database (Read Replica)",
+        "type": "geo_replication",
+        "configuration": {}
+      },
+      {
+        "source": "Azure App Service (East US)",
+        "target": "Azure Cosmos DB",
+        "type": "database_connection",
+        "configuration": {}
+      },
+      {
+        "source": "Azure App Service (West Europe)",
+        "target": "Azure Cosmos DB",
+        "type": "database_connection",
+        "configuration": {}
+      },
+      {
+        "source": "Azure App Service (Southeast Asia)",
+        "target": "Azure Cosmos DB",
+        "type": "database_connection",
+        "configuration": {}
+      },
+      {
+        "source": "Azure App Service (East US)",
+        "target": "Azure Search",
+        "type": "search_index",
+        "configuration": {}
+      },
+      {
+        "source": "Azure App Service (West Europe)",
+        "target": "Azure Search",
+        "type": "search_index",
+        "configuration": {}
+      },
+      {
+        "source": "Azure App Service (Southeast Asia)",
+        "target": "Azure Search",
+        "type": "search_index",
+        "configuration": {}
+      },
+      {
+        "source": "Azure App Service (East US)",
+        "target": "Azure Service Bus",
+        "type": "messaging",
+        "configuration": {}
+      },
+      {
+        "source": "Azure App Service (West Europe)",
+        "target": "Azure Service Bus",
+        "type": "messaging",
+        "configuration": {}
+      },
+      {
+        "source": "Azure App Service (Southeast Asia)",
+        "target": "Azure Service Bus",
+        "type": "messaging",
+        "configuration": {}
+      },
+      {
+        "source": "Azure App Service (East US)",
+        "target": "Azure Key Vault",
+        "type": "secrets_management",
+        "configuration": {}
+      },
+      {
+        "source": "Azure App Service (West Europe)",
+        "target": "Azure Key Vault",
+        "type": "secrets_management",
+        "configuration": {}
+      },
+      {
+        "source": "Azure App Service (Southeast Asia)",
+        "target": "Azure Key Vault",
+        "type": "secrets_management",
+        "configuration": {}
+      },
+      {
+        "source": "Azure App Service (East US)",
+        "target": "Azure Application Insights",
+        "type": "monitoring",
+        "configuration": {}
+      },
+      {
+        "source": "Azure App Service (West Europe)",
+        "target": "Azure Application Insights",
+        "type": "monitoring",
+        "configuration": {}
+      },
+      {
+        "source": "Azure App Service (Southeast Asia)",
+        "target": "Azure Application Insights",
+        "type": "monitoring",
+        "configuration": {}
+      }
+    ],
+    "accuracy": 100.0,
+    "expected_components": [
+      "Front Door",
+      "CDN",
+      "App Service",
+      "SQL Database",
+      "Cosmos DB",
+      "Search",
+      "Service Bus",
+      "Key Vault",
+      "Application Insights"
+    ]
+  },
+  {
+    "test_case": "AI/ML Platform",
+    "complexity": "Very Hard",
+    "success": true,
+    "components_found": 13,
+    "relationships_found": 17,
+    "components": [
+      {
+        "name": "Azure Machine Learning Workspace",
+        "type": "Azure Machine Learning",
+        "configuration": {
+          "sku": "Enterprise/Standard (unspecified)",
+          "region": "unspecified",
+          "settings": {
+            "compute_clusters": "enabled"
+          }
+        },
+        "dependencies": [
+          "Azure Storage",
+          "Azure Data Factory",
+          "Azure DevOps",
+          "Azure Kubernetes Service",
+          "Azure Container Instances",
+          "Azure Monitor"
+        ]
+      },
+      {
+        "name": "Azure Databricks",
+        "type": "Azure Databricks",
+        "configuration": {
+          "sku": "Standard/Premium (unspecified)",
+          "region": "unspecified",
+          "settings": {}
+        },
+        "dependencies": [
+          "Azure Storage",
+          "Azure Data Factory"
+        ]
+      },
+      {
+        "name": "Azure Cognitive Services",
+        "type": "Cognitive Services",
+        "configuration": {
+          "sku": "Vision, Speech, Language APIs (unspecified tier)",
+          "region": "unspecified",
+          "settings": {}
+        },
+        "dependencies": []
+      },
+      {
+        "name": "Azure Bot Service",
+        "type": "Bot Service",
+        "configuration": {
+          "sku": "unspecified",
+          "region": "unspecified",
+          "settings": {}
+        },
+        "dependencies": [
+          "Azure Cognitive Services"
+        ]
+      },
+      {
+        "name": "Azure Container Instances",
+        "type": "Container Instances",
+        "configuration": {
+          "sku": "unspecified",
+          "region": "unspecified",
+          "settings": {}
+        },
+        "dependencies": [
+          "Azure Machine Learning Workspace",
+          "Azure Storage"
+        ]
+      },
+      {
+        "name": "Azure Kubernetes Service",
+        "type": "Kubernetes Service",
+        "configuration": {
+          "sku": "unspecified",
+          "region": "unspecified",
+          "settings": {}
+        },
+        "dependencies": [
+          "Azure Machine Learning Workspace",
+          "Azure Storage"
+        ]
+      },
+      {
+        "name": "Azure Data Factory",
+        "type": "Data Factory",
+        "configuration": {
+          "sku": "V2 (unspecified tier)",
+          "region": "unspecified",
+          "settings": {}
+        },
+        "dependencies": [
+          "Azure Storage",
+          "Azure Databricks",
+          "Azure Machine Learning Workspace"
+        ]
+      },
+      {
+        "name": "Azure DevOps",
+        "type": "DevOps",
+        "configuration": {
+          "sku": "unspecified",
+          "region": "unspecified",
+          "settings": {
+            "MLOps": "enabled"
+          }
+        },
+        "dependencies": [
+          "Azure Machine Learning Workspace",
+          "Azure Kubernetes Service",
+          "Azure Container Instances"
+        ]
+      },
+      {
+        "name": "Azure Monitor",
+        "type": "Monitor",
+        "configuration": {
+          "sku": "unspecified",
+          "region": "unspecified",
+          "settings": {
+            "ML model monitoring": "enabled"
+          }
+        },
+        "dependencies": [
+          "Azure Machine Learning Workspace",
+          "Azure Kubernetes Service",
+          "Azure Container Instances"
+        ]
+      },
+      {
+        "name": "Azure Event Hub",
+        "type": "Event Hub",
+        "configuration": {
+          "sku": "unspecified",
+          "region": "unspecified",
+          "settings": {
+            "real-time scoring": "enabled"
+          }
+        },
+        "dependencies": [
+          "Azure Functions",
+          "Azure Machine Learning Workspace"
+        ]
+      },
+      {
+        "name": "Azure Functions",
+        "type": "Functions",
+        "configuration": {
+          "sku": "Consumption/Elastic Premium (unspecified)",
+          "region": "unspecified",
+          "settings": {
+            "serverless ML inference": "enabled"
+          }
+        },
+        "dependencies": [
+          "Azure Machine Learning Workspace",
+          "Azure Event Hub"
+        ]
+      },
+      {
+        "name": "Azure Storage",
+        "type": "Storage Account",
+        "configuration": {
+          "sku": "Hierarchical Namespace (Data Lake Storage Gen2)",
+          "region": "unspecified",
+          "settings": {
+            "for ML datasets": "enabled"
+          }
+        },
+        "dependencies": []
+      },
+      {
+        "name": "Azure Purview",
+        "type": "Purview",
+        "configuration": {
+          "sku": "unspecified",
+          "region": "unspecified",
+          "settings": {
+            "data governance": "enabled"
+          }
+        },
+        "dependencies": [
+          "Azure Storage",
+          "Azure Data Factory"
+        ]
+      }
+    ],
+    "relationships": [
+      {
+        "source": "Azure Data Factory",
+        "target": "Azure Storage",
+        "type": "reads/writes",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Data Factory",
+        "target": "Azure Databricks",
+        "type": "orchestrates",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Data Factory",
+        "target": "Azure Machine Learning Workspace",
+        "type": "orchestrates",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Machine Learning Workspace",
+        "target": "Azure Kubernetes Service",
+        "type": "deploys models to",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Machine Learning Workspace",
+        "target": "Azure Container Instances",
+        "type": "deploys models to",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Machine Learning Workspace",
+        "target": "Azure Storage",
+        "type": "reads/writes datasets",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Machine Learning Workspace",
+        "target": "Azure Monitor",
+        "type": "sends monitoring data",
+        "configuration": {}
+      },
+      {
+        "source": "Azure DevOps",
+        "target": "Azure Machine Learning Workspace",
+        "type": "CI/CD pipeline",
+        "configuration": {}
+      },
+      {
+        "source": "Azure DevOps",
+        "target": "Azure Kubernetes Service",
+        "type": "CI/CD pipeline",
+        "configuration": {}
+      },
+      {
+        "source": "Azure DevOps",
+        "target": "Azure Container Instances",
+        "type": "CI/CD pipeline",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Kubernetes Service",
+        "target": "Azure Monitor",
+        "type": "sends monitoring data",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Container Instances",
+        "target": "Azure Monitor",
+        "type": "sends monitoring data",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Event Hub",
+        "target": "Azure Functions",
+        "type": "triggers",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Functions",
+        "target": "Azure Machine Learning Workspace",
+        "type": "invokes ML inference",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Bot Service",
+        "target": "Azure Cognitive Services",
+        "type": "calls APIs",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Purview",
+        "target": "Azure Storage",
+        "type": "scans/catalogs",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Purview",
+        "target": "Azure Data Factory",
+        "type": "scans/catalogs",
+        "configuration": {}
+      }
+    ],
+    "accuracy": 92.3076923076923,
+    "expected_components": [
+      "Machine Learning",
+      "Databricks",
+      "Cognitive Services",
+      "Bot Service",
+      "Container Instances",
+      "AKS",
+      "Data Factory",
+      "DevOps",
+      "Monitor",
+      "Event Hub",
+      "Functions",
+      "Storage Account",
+      "Purview"
+    ]
+  },
+  {
+    "test_case": "Hybrid Cloud Infrastructure",
+    "complexity": "Very Hard",
+    "success": true,
+    "components_found": 18,
+    "relationships_found": 18,
+    "components": [
+      {
+        "name": "On-premises Data Center",
+        "type": "on_premises",
+        "configuration": {
+          "sku": null,
+          "region": null,
+          "settings": {
+            "azure_stack_hci": true
+          }
+        },
+        "dependencies": [
+          "Azure Stack HCI",
+          "Azure ExpressRoute",
+          "Azure VPN Gateway",
+          "Azure File Sync",
+          "Azure AD Connect"
+        ]
+      },
+      {
+        "name": "Azure Stack HCI",
+        "type": "hybrid_infrastructure",
+        "configuration": {
+          "sku": null,
+          "region": null,
+          "settings": {}
+        },
+        "dependencies": [
+          "On-premises Data Center",
+          "Azure Arc"
+        ]
+      },
+      {
+        "name": "Azure ExpressRoute",
+        "type": "networking",
+        "configuration": {
+          "sku": "multiple circuits",
+          "region": "global",
+          "settings": {}
+        },
+        "dependencies": [
+          "On-premises Data Center",
+          "Azure Virtual WAN"
+        ]
+      },
+      {
+        "name": "Azure VPN Gateway",
+        "type": "networking",
+        "configuration": {
+          "sku": "site-to-site",
+          "region": "global",
+          "settings": {}
+        },
+        "dependencies": [
+          "On-premises Data Center",
+          "Azure Virtual WAN"
+        ]
+      },
+      {
+        "name": "Azure Virtual WAN",
+        "type": "networking",
+        "configuration": {
+          "sku": null,
+          "region": "global",
+          "settings": {}
+        },
+        "dependencies": [
+          "Azure ExpressRoute",
+          "Azure VPN Gateway"
+        ]
+      },
+      {
+        "name": "Azure Arc",
+        "type": "management",
+        "configuration": {
+          "sku": null,
+          "region": "global",
+          "settings": {}
+        },
+        "dependencies": [
+          "Azure Stack HCI",
+          "On-premises Data Center"
+        ]
+      },
+      {
+        "name": "Azure Site Recovery",
+        "type": "business_continuity",
+        "configuration": {
+          "sku": null,
+          "region": "global",
+          "settings": {}
+        },
+        "dependencies": [
+          "On-premises Data Center",
+          "Azure"
+        ]
+      },
+      {
+        "name": "Azure Backup",
+        "type": "backup",
+        "configuration": {
+          "sku": null,
+          "region": "global",
+          "settings": {}
+        },
+        "dependencies": [
+          "On-premises Data Center",
+          "Azure"
+        ]
+      },
+      {
+        "name": "Azure File Sync",
+        "type": "storage",
+        "configuration": {
+          "sku": null,
+          "region": "global",
+          "settings": {}
+        },
+        "dependencies": [
+          "On-premises Data Center",
+          "Azure Storage"
+        ]
+      },
+      {
+        "name": "Azure AD Connect",
+        "type": "identity",
+        "configuration": {
+          "sku": null,
+          "region": "global",
+          "settings": {}
+        },
+        "dependencies": [
+          "On-premises Data Center",
+          "Azure Active Directory"
+        ]
+      },
+      {
+        "name": "Azure AD B2B/B2C",
+        "type": "identity",
+        "configuration": {
+          "sku": null,
+          "region": "global",
+          "settings": {}
+        },
+        "dependencies": [
+          "Azure Active Directory"
+        ]
+      },
+      {
+        "name": "Azure Policy",
+        "type": "governance",
+        "configuration": {
+          "sku": null,
+          "region": "global",
+          "settings": {}
+        },
+        "dependencies": [
+          "Azure Resources"
+        ]
+      },
+      {
+        "name": "Azure Blueprints",
+        "type": "governance",
+        "configuration": {
+          "sku": null,
+          "region": "global",
+          "settings": {}
+        },
+        "dependencies": [
+          "Azure Policy",
+          "Azure Resources"
+        ]
+      },
+      {
+        "name": "Azure Cost Management",
+        "type": "management",
+        "configuration": {
+          "sku": null,
+          "region": "global",
+          "settings": {}
+        },
+        "dependencies": [
+          "Azure Resources"
+        ]
+      },
+      {
+        "name": "Azure Lighthouse",
+        "type": "management",
+        "configuration": {
+          "sku": null,
+          "region": "global",
+          "settings": {}
+        },
+        "dependencies": [
+          "Azure Resources"
+        ]
+      },
+      {
+        "name": "Azure Storage",
+        "type": "storage",
+        "configuration": {
+          "sku": null,
+          "region": "global",
+          "settings": {}
+        },
+        "dependencies": []
+      },
+      {
+        "name": "Azure Active Directory",
+        "type": "identity",
+        "configuration": {
+          "sku": null,
+          "region": "global",
+          "settings": {}
+        },
+        "dependencies": []
+      },
+      {
+        "name": "Azure Resources",
+        "type": "resource_group",
+        "configuration": {
+          "sku": null,
+          "region": "global",
+          "settings": {}
+        },
+        "dependencies": []
+      }
+    ],
+    "relationships": [
+      {
+        "source": "On-premises Data Center",
+        "target": "Azure Stack HCI",
+        "type": "hosts",
+        "configuration": {}
+      },
+      {
+        "source": "On-premises Data Center",
+        "target": "Azure ExpressRoute",
+        "type": "connects_to",
+        "configuration": {}
+      },
+      {
+        "source": "On-premises Data Center",
+        "target": "Azure VPN Gateway",
+        "type": "connects_to",
+        "configuration": {}
+      },
+      {
+        "source": "Azure ExpressRoute",
+        "target": "Azure Virtual WAN",
+        "type": "integrates_with",
+        "configuration": {}
+      },
+      {
+        "source": "Azure VPN Gateway",
+        "target": "Azure Virtual WAN",
+        "type": "integrates_with",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Stack HCI",
+        "target": "Azure Arc",
+        "type": "managed_by",
+        "configuration": {}
+      },
+      {
+        "source": "On-premises Data Center",
+        "target": "Azure Site Recovery",
+        "type": "protected_by",
+        "configuration": {}
+      },
+      {
+        "source": "On-premises Data Center",
+        "target": "Azure Backup",
+        "type": "backed_up_by",
+        "configuration": {}
+      },
+      {
+        "source": "On-premises Data Center",
+        "target": "Azure File Sync",
+        "type": "syncs_with",
+        "configuration": {}
+      },
+      {
+        "source": "Azure File Sync",
+        "target": "Azure Storage",
+        "type": "syncs_to",
+        "configuration": {}
+      },
+      {
+        "source": "On-premises Data Center",
+        "target": "Azure AD Connect",
+        "type": "syncs_identity_with",
+        "configuration": {}
+      },
+      {
+        "source": "Azure AD Connect",
+        "target": "Azure Active Directory",
+        "type": "syncs_to",
+        "configuration": {}
+      },
+      {
+        "source": "Azure AD B2B/B2C",
+        "target": "Azure Active Directory",
+        "type": "extends_identity",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Policy",
+        "target": "Azure Resources",
+        "type": "governs",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Blueprints",
+        "target": "Azure Policy",
+        "type": "applies",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Blueprints",
+        "target": "Azure Resources",
+        "type": "standardizes",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Cost Management",
+        "target": "Azure Resources",
+        "type": "monitors",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Lighthouse",
+        "target": "Azure Resources",
+        "type": "manages",
+        "configuration": {}
+      }
+    ],
+    "accuracy": 100.0,
+    "expected_components": [
+      "ExpressRoute",
+      "VPN Gateway",
+      "Virtual WAN",
+      "Arc",
+      "Site Recovery",
+      "Backup",
+      "File Sync",
+      "AD Connect",
+      "Active Directory",
+      "Policy",
+      "Blueprints",
+      "Cost Management",
+      "Lighthouse"
+    ]
+  },
+  {
+    "test_case": "Financial Services Platform",
+    "complexity": "Extreme",
+    "success": true,
+    "components_found": 18,
+    "relationships_found": 11,
+    "components": [
+      {
+        "name": "Azure Government Regions",
+        "type": "region",
+        "configuration": {
+          "sku": "N/A",
+          "region": "Azure Government",
+          "settings": {
+            "compliance": "US Government regulatory standards"
+          }
+        },
+        "dependencies": []
+      },
+      {
+        "name": "Azure Dedicated Host",
+        "type": "compute",
+        "configuration": {
+          "sku": "Dedicated Host",
+          "region": "Azure Government",
+          "settings": {
+            "isolation": "Physical server dedicated to one customer"
+          }
+        },
+        "dependencies": [
+          "Azure Government Regions"
+        ]
+      },
+      {
+        "name": "Azure Confidential Computing",
+        "type": "compute_security",
+        "configuration": {
+          "sku": "Confidential VMs",
+          "region": "Azure Government",
+          "settings": {
+            "encryption": "Memory and data-in-use encryption"
+          }
+        },
+        "dependencies": [
+          "Azure Dedicated Host"
+        ]
+      },
+      {
+        "name": "Azure Private Link",
+        "type": "network",
+        "configuration": {
+          "sku": "Standard",
+          "region": "Azure Government",
+          "settings": {
+            "connectivity": "Private endpoint access to PaaS services"
+          }
+        },
+        "dependencies": [
+          "Azure Dedicated Host"
+        ]
+      },
+      {
+        "name": "Azure Firewall Premium",
+        "type": "network_security",
+        "configuration": {
+          "sku": "Premium",
+          "region": "Azure Government",
+          "settings": {
+            "threat_intelligence": "Enabled"
+          }
+        },
+        "dependencies": [
+          "Azure Private Link"
+        ]
+      },
+      {
+        "name": "Azure DDoS Protection Standard",
+        "type": "network_security",
+        "configuration": {
+          "sku": "Standard",
+          "region": "Azure Government",
+          "settings": {}
+        },
+        "dependencies": [
+          "Azure Firewall Premium"
+        ]
+      },
+      {
+        "name": "Azure Web Application Firewall",
+        "type": "application_security",
+        "configuration": {
+          "sku": "WAF_v2",
+          "region": "Azure Government",
+          "settings": {}
+        },
+        "dependencies": [
+          "Azure Firewall Premium"
+        ]
+      },
+      {
+        "name": "Azure Key Vault Premium",
+        "type": "security",
+        "configuration": {
+          "sku": "Premium",
+          "region": "Azure Government",
+          "settings": {
+            "HSM": "Enabled"
+          }
+        },
+        "dependencies": [
+          "Azure Confidential Computing"
+        ]
+      },
+      {
+        "name": "Azure Information Protection",
+        "type": "data_security",
+        "configuration": {
+          "sku": "Plan 2",
+          "region": "Azure Government",
+          "settings": {
+            "data_classification": "Enabled"
+          }
+        },
+        "dependencies": [
+          "Azure Key Vault Premium"
+        ]
+      },
+      {
+        "name": "Azure Sentinel",
+        "type": "siem",
+        "configuration": {
+          "sku": "Pay-as-you-go",
+          "region": "Azure Government",
+          "settings": {}
+        },
+        "dependencies": [
+          "Azure Firewall Premium",
+          "Azure DDoS Protection Standard",
+          "Azure Web Application Firewall",
+          "Azure Key Vault Premium",
+          "Azure Security Center"
+        ]
+      },
+      {
+        "name": "Azure Security Center",
+        "type": "security_management",
+        "configuration": {
+          "sku": "Standard",
+          "region": "Azure Government",
+          "settings": {
+            "threat_protection": "Enabled"
+          }
+        },
+        "dependencies": [
+          "Azure Dedicated Host",
+          "Azure Confidential Computing"
+        ]
+      },
+      {
+        "name": "Azure Compliance Manager",
+        "type": "compliance",
+        "configuration": {
+          "sku": "Standard",
+          "region": "Azure Government",
+          "settings": {
+            "regulatory_compliance": "Enabled"
+          }
+        },
+        "dependencies": [
+          "Azure Security Center"
+        ]
+      },
+      {
+        "name": "Azure PCI Compliance",
+        "type": "compliance",
+        "configuration": {
+          "sku": "N/A",
+          "region": "Azure Government",
+          "settings": {
+            "PCI DSS": "Attestation"
+          }
+        },
+        "dependencies": [
+          "Azure Compliance Manager"
+        ]
+      },
+      {
+        "name": "Azure SOC 2 Type II Attestation",
+        "type": "compliance",
+        "configuration": {
+          "sku": "N/A",
+          "region": "Azure Government",
+          "settings": {
+            "SOC 2 Type II": "Attestation"
+          }
+        },
+        "dependencies": [
+          "Azure Compliance Manager"
+        ]
+      },
+      {
+        "name": "Azure Multi-Factor Authentication",
+        "type": "identity",
+        "configuration": {
+          "sku": "Premium",
+          "region": "Azure Government",
+          "settings": {
+            "conditional_access": "Enabled"
+          }
+        },
+        "dependencies": []
+      },
+      {
+        "name": "Just-in-Time VM Access",
+        "type": "security_management",
+        "configuration": {
+          "sku": "Standard",
+          "region": "Azure Government",
+          "settings": {
+            "JIT": "Enabled"
+          }
+        },
+        "dependencies": [
+          "Azure Security Center"
+        ]
+      },
+      {
+        "name": "Privileged Identity Management",
+        "type": "identity",
+        "configuration": {
+          "sku": "Premium P2",
+          "region": "Azure Government",
+          "settings": {
+            "PIM": "Enabled"
+          }
+        },
+        "dependencies": [
+          "Azure Multi-Factor Authentication"
+        ]
+      },
+      {
+        "name": "Azure Attestation",
+        "type": "security",
+        "configuration": {
+          "sku": "Standard",
+          "region": "Azure Government",
+          "settings": {
+            "hardware_security": "Enabled"
+          }
+        },
+        "dependencies": [
+          "Azure Confidential Computing"
+        ]
+      }
+    ],
+    "relationships": [
+      {
+        "source": "Azure Dedicated Host",
+        "target": "Azure Confidential Computing",
+        "type": "hosts",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Confidential Computing",
+        "target": "Azure Key Vault Premium",
+        "type": "protects",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Key Vault Premium",
+        "target": "Azure Information Protection",
+        "type": "integrates_with",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Firewall Premium",
+        "target": "Azure DDoS Protection Standard",
+        "type": "protected_by",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Firewall Premium",
+        "target": "Azure Web Application Firewall",
+        "type": "integrates_with",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Security Center",
+        "target": "Just-in-Time VM Access",
+        "type": "manages",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Security Center",
+        "target": "Azure Sentinel",
+        "type": "feeds_logs_to",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Compliance Manager",
+        "target": "Azure PCI Compliance",
+        "type": "attests",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Compliance Manager",
+        "target": "Azure SOC 2 Type II Attestation",
+        "type": "attests",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Multi-Factor Authentication",
+        "target": "Privileged Identity Management",
+        "type": "required_for",
+        "configuration": {}
+      },
+      {
+        "source": "Azure Confidential Computing",
+        "target": "Azure Attestation",
+        "type": "attested_by",
+        "configuration": {}
+      }
+    ],
+    "accuracy": 92.3076923076923,
+    "expected_components": [
+      "Dedicated Host",
+      "Confidential Computing",
+      "Private Link",
+      "Firewall",
+      "DDoS Protection",
+      "Web Application Firewall",
+      "Key Vault",
+      "Information Protection",
+      "Sentinel",
+      "Security Center",
+      "Compliance Manager",
+      "Active Directory",
+      "Attestation"
+    ]
+  }
+]

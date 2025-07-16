@@ -1,0 +1,46 @@
+{
+    "displayName": "Enforce Customer Managed Keys for Function Apps",
+    "policyType": "Custom",
+    "mode": "Indexed",
+    "description": "This policy ensures that Function Apps must use Customer Managed Keys for encryption.",
+    "metadata": {
+        "version": "1.0.0",
+        "category": "Compute"
+    },
+    "parameters": {
+        "effect": {
+            "type": "String",
+            "metadata": {
+                "displayName": "Effect",
+                "description": "Effect of the policy"
+            },
+            "allowedValues": [
+                "Audit",
+                "Deny",
+                "Disabled"
+            ],
+            "defaultValue": "Audit"
+        }
+    },
+    "policyRule": {
+        "if": {
+            "allOf": [
+                {
+                    "field": "type",
+                    "equals": "Microsoft.Web/sites"
+                },
+                {
+                    "field": "Microsoft.Web/sites/identity.type",
+                    "equals": "SystemAssigned"
+                },
+                {
+                    "field": "Microsoft.Web/sites/config/encryption.keySource",
+                    "notEquals": "Microsoft.KeyVault"
+                }
+            ]
+        },
+        "then": {
+            "effect": "[parameters('effect')]"
+        }
+    }
+}

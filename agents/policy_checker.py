@@ -52,10 +52,13 @@ class PolicyChecker:
         # Load policy templates
         self.policy_templates = self._load_policy_templates()
         
+        # Load custom policies from policies folder
+        self.custom_policies = self._load_custom_policies()
+        
         # Simple cache for policy checks
         self._cache = {}
         self._max_cache_size = 50
-    
+
     def check_compliance(self, architecture_analysis: Dict[str, Any], environment: str) -> Dict[str, Any]:
         """
         Check architecture compliance against Azure policies
@@ -99,6 +102,38 @@ class PolicyChecker:
                 response.choices[0].message.content,
                 environment
             )
+            
+            # Add custom policy validation
+            custom_policy_results = self._validate_custom_policies(architecture_analysis)
+            
+            # Merge custom policy results with main compliance results
+            if custom_policy_results['policy_checks']:
+                compliance_result['custom_policy_validation'] = custom_policy_results
+                
+                # Update overall compliance status
+                if not custom_policy_results['compliant']:
+                    compliance_result['compliant'] = False
+                    
+                # Add custom policy violations to main violations list
+                if 'violations' not in compliance_result:
+                    compliance_result['violations'] = []
+                compliance_result['violations'].extend(custom_policy_results['violations'])
+                
+                # Add custom policy warnings
+                if 'warnings' not in compliance_result:
+                    compliance_result['warnings'] = []
+                compliance_result['warnings'].extend(custom_policy_results['warnings'])
+                
+                # Update compliance score based on custom policies
+                if 'overall_compliance' in compliance_result:
+                    total_policies = len(custom_policy_results['policy_checks'])
+                    compliant_policies = sum(1 for check in custom_policy_results['policy_checks'] if check['compliant'])
+                    if total_policies > 0:
+                        custom_score = (compliant_policies / total_policies) * 100
+                        current_score = float(compliance_result['overall_compliance'].get('compliance_score', '0').replace('%', ''))
+                        # Average the scores (you might want to adjust this weighting)
+                        combined_score = (current_score + custom_score) / 2
+                        compliance_result['overall_compliance']['compliance_score'] = f"{combined_score:.1f}%"
             
             # Save to cache
             self._save_to_cache(cache_key, compliance_result)
@@ -230,15 +265,60 @@ class PolicyChecker:
             }
         }
     
-    def _get_environment_policies(self, environment: str) -> Dict[str, List[str]]:
-        """Get policies specific to the environment"""
-        return self.policy_templates.get(environment.lower(), self.policy_templates['development'])
+    def _get_environment_policies(self, environment: str) -> Dict[str, Any]:
+        """Get policies specific to the environment, including custom policies"""
+        base_policies = self.policy_templates.get(environment.lower(), self.policy_templates['development'])
+        
+        # Add custom policies to the base policies
+        if self.custom_policies:
+            # Create a copy to avoid modifying the original
+            enhanced_policies = base_policies.copy()
+            enhanced_policies['custom_policies'] = self.custom_policies
+            
+            # Add custom policy descriptions to environment-specific sections
+            for category, policy_data in self.custom_policies.items():
+                if category not in enhanced_policies:
+                    enhanced_policies[category] = {
+                        'level': 'custom',
+                        'policies': []
+                    }
+                
+                # Add policy names and descriptions
+                custom_policy_descriptions = []
+                for policy in policy_data['policies']:
+                    severity_label = {
+                        'critical': '[CRITICAL]',
+                        'high': '[HIGH]',
+                        'medium': '[MEDIUM]',
+                        'low': '[LOW]',
+                        'info': '[INFO]'
+                    }.get(policy['severity'], '[MEDIUM]')
+                    
+                    custom_policy_descriptions.append(
+                        f"{severity_label} {policy['name']}: {policy['description']}"
+                    )
+                
+                enhanced_policies[category]['policies'].extend(custom_policy_descriptions)
+            
+            return enhanced_policies
+        
+        return base_policies
     
     def _create_compliance_prompt(self, analysis: Dict[str, Any], policies: Dict[str, Any], environment: str) -> str:
         """Create compliance check prompt"""
         
         compliance_level = policies.get('compliance_level', 'basic')
         required_policies = policies.get('required_policies', 5)
+        
+        # Extract custom policies summary
+        custom_policies_summary = ""
+        if 'custom_policies' in policies:
+            custom_policies_summary = "\n\nCUSTOM AZURE POLICIES TO VALIDATE:\n"
+            for category, policy_data in policies['custom_policies'].items():
+                custom_policies_summary += f"\n{policy_data['category']} Policies:\n"
+                for policy in policy_data['policies']:
+                    custom_policies_summary += f"  - {policy['name']} (Effect: {policy['effect']}, Severity: {policy['severity']})\n"
+                    custom_policies_summary += f"    Description: {policy['description']}\n"
         
         prompt = f"""
         Please analyze the following Azure architecture for compliance with Microsoft Azure policies.
@@ -256,7 +336,12 @@ class PolicyChecker:
         {json.dumps(analysis, indent=2)}
         
         Environment-Specific Policy Requirements:
-        {json.dumps(policies, indent=2)}
+        {json.dumps({k: v for k, v in policies.items() if k != 'custom_policies'}, indent=2)}
+        {custom_policies_summary}
+        
+        CRITICAL: When analyzing compliance, pay special attention to the custom Azure policies listed above. 
+        These are organization-specific policies that must be evaluated alongside standard Azure policies.
+        For each custom policy, check if the architecture components comply with the policy rule and effect.
         
         Please provide a detailed compliance analysis in the following JSON structure:
         {{
@@ -329,6 +414,145 @@ class PolicyChecker:
         
         return prompt
     
+    def _validate_custom_policies(self, architecture_analysis: Dict[str, Any]) -> Dict[str, Any]:
+        """Validate architecture against custom policies"""
+        validation_results = {
+            'compliant': True,
+            'violations': [],
+            'warnings': [],
+            'policy_checks': []
+        }
+        
+        if not self.custom_policies:
+            return validation_results
+            
+        resources = architecture_analysis.get('resources', [])
+        
+        for category, policy_data in self.custom_policies.items():
+            for policy in policy_data['policies']:
+                policy_name = policy['name']
+                policy_rule = policy['policy_rule']
+                effect = policy['effect']
+                severity = policy['severity']
+                
+                # Basic policy validation logic
+                violation_found = False
+                affected_resources = []
+                
+                # Check each resource against the policy rule
+                for resource in resources:
+                    resource_type = resource.get('type', '')
+                    
+                    # Simple policy rule evaluation (this could be enhanced)
+                    if self._evaluate_policy_rule(resource, policy_rule):
+                        violation_found = True
+                        affected_resources.append(resource.get('name', 'Unknown'))
+                
+                policy_check = {
+                    'policy_name': policy_name,
+                    'category': category,
+                    'effect': effect,
+                    'severity': severity,
+                    'compliant': not violation_found,
+                    'affected_resources': affected_resources
+                }
+                
+                validation_results['policy_checks'].append(policy_check)
+                
+                if violation_found:
+                    validation_results['compliant'] = False
+                    
+                    violation = {
+                        'policy': policy_name,
+                        'category': category,
+                        'severity': severity,
+                        'effect': effect,
+                        'description': policy.get('description', ''),
+                        'affected_resources': affected_resources,
+                        'recommendation': f"Review and modify resources to comply with {policy_name}"
+                    }
+                    
+                    if severity in ['critical', 'high']:
+                        validation_results['violations'].append(violation)
+                    else:
+                        validation_results['warnings'].append(violation)
+        
+        return validation_results
+    
+    def _evaluate_policy_rule(self, resource: Dict[str, Any], policy_rule: Dict[str, Any]) -> bool:
+        """Evaluate a single policy rule against a resource"""
+        # This is a simplified policy rule evaluation
+        # In a production environment, this would need more sophisticated rule evaluation
+        
+        if not policy_rule or 'if' not in policy_rule:
+            return False
+            
+        condition = policy_rule['if']
+        
+        # Handle allOf conditions
+        if 'allOf' in condition:
+            for sub_condition in condition['allOf']:
+                if not self._evaluate_condition(resource, sub_condition):
+                    return False
+            return True
+            
+        # Handle anyOf conditions  
+        if 'anyOf' in condition:
+            for sub_condition in condition['anyOf']:
+                if self._evaluate_condition(resource, sub_condition):
+                    return True
+            return False
+            
+        # Handle single condition
+        return self._evaluate_condition(resource, condition)
+    
+    def _evaluate_condition(self, resource: Dict[str, Any], condition: Dict[str, Any]) -> bool:
+        """Evaluate a single condition against a resource"""
+        if 'field' in condition:
+            field_path = condition['field']
+            resource_value = self._get_resource_field_value(resource, field_path)
+            
+            # Handle different condition types
+            if 'equals' in condition:
+                return resource_value == condition['equals']
+            elif 'in' in condition:
+                return resource_value in condition['in']
+            elif 'notIn' in condition:
+                return resource_value not in condition['notIn']
+            elif 'like' in condition:
+                import re
+                pattern = condition['like'].replace('*', '.*')
+                return bool(re.match(pattern, str(resource_value), re.IGNORECASE))
+            elif 'exists' in condition:
+                return (resource_value is not None) == condition['exists']
+                
+        return False
+    
+    def _get_resource_field_value(self, resource: Dict[str, Any], field_path: str):
+        """Get the value of a field from a resource using dot notation"""
+        # Handle Azure resource field paths like "Microsoft.Compute/virtualMachines/sku.name"
+        if '/' in field_path:
+            # For Azure resource types, extract the relevant part
+            parts = field_path.split('/')
+            if len(parts) >= 2:
+                resource_type = '/'.join(parts[:2])
+                if resource.get('type') == resource_type:
+                    if len(parts) > 2:
+                        field_name = parts[2]
+                        return resource.get(field_name)
+                    else:
+                        return resource.get('type')
+        
+        # Handle simple field names
+        field_parts = field_path.split('.')
+        value = resource
+        for part in field_parts:
+            if isinstance(value, dict) and part in value:
+                value = value[part]
+            else:
+                return None
+        return value
+    
     def _parse_compliance_response(self, response: str, environment: str) -> Dict[str, Any]:
         """Parse the compliance response"""
         try:
@@ -370,11 +594,17 @@ class PolicyChecker:
     
     def generate_compliance_report(self, compliance_result: Dict[str, Any]) -> str:
         """Generate a human-readable compliance report"""
+        
+        # Generate custom policies table
+        custom_policies_table = self._generate_custom_policies_table(compliance_result)
+        
         report = f"""
 # Azure Architecture Compliance Report
 
 ## Environment: {compliance_result.get('environment', 'Unknown').upper()}
 ## Generated: {compliance_result.get('check_timestamp', 'Unknown')}
+
+{custom_policies_table}
 
 ## Overall Compliance Summary
 - **Compliant**: {compliance_result.get('overall_compliance', {}).get('compliant', 'Unknown')}
@@ -408,6 +638,112 @@ class PolicyChecker:
         
         return report
     
+    def _generate_custom_policies_table(self, compliance_result: Dict[str, Any]) -> str:
+        """Generate a table of custom policies that were evaluated"""
+        
+        # Check if we have custom policy validation results
+        custom_validation = compliance_result.get('custom_policy_validation', {})
+        policy_checks = custom_validation.get('policy_checks', [])
+        
+        if not policy_checks:
+            # If no custom policy results, show loaded policies
+            return self._generate_loaded_policies_table()
+        
+        # Generate table with policy check results
+        table = """
+## Custom Azure Policies Evaluated
+
+The following organization-specific Azure policies were evaluated against the architecture:
+
+| Policy Name | Category | Effect | Severity | Status | Affected Resources |
+|-------------|----------|--------|----------|--------|--------------------|"""
+        
+        for check in policy_checks:
+            policy_name = check.get('policy_name', 'Unknown')
+            category = check.get('category', 'Unknown').title()
+            effect = check.get('effect', 'Unknown')
+            severity = check.get('severity', 'Unknown').upper()
+            status = '✅ COMPLIANT' if check.get('compliant', False) else '❌ NON-COMPLIANT'
+            affected_resources = ', '.join(check.get('affected_resources', [])) or 'None'
+            
+            # Truncate long resource lists
+            if len(affected_resources) > 50:
+                affected_resources = affected_resources[:47] + '...'
+            
+            table += f"\n| {policy_name} | {category} | {effect} | {severity} | {status} | {affected_resources} |"
+        
+        # Add summary statistics
+        total_policies = len(policy_checks)
+        compliant_policies = sum(1 for check in policy_checks if check.get('compliant', False))
+        non_compliant_policies = total_policies - compliant_policies
+        
+        table += f"""
+
+### Custom Policy Compliance Summary
+- **Total Custom Policies Evaluated**: {total_policies}
+- **Compliant**: {compliant_policies} (✅)
+- **Non-Compliant**: {non_compliant_policies} (❌)
+- **Compliance Rate**: {(compliant_policies/total_policies*100) if total_policies > 0 else 0:.1f}%
+"""
+        
+        return table
+    
+    def _generate_loaded_policies_table(self) -> str:
+        """Generate a table of loaded policies when no validation results are available"""
+        
+        if not self.custom_policies:
+            return """
+## Custom Azure Policies
+
+No custom Azure policies were found in the policies folder.
+"""
+        
+        table = """
+## Custom Azure Policies Available
+
+The following organization-specific Azure policies are available for evaluation:
+
+| Policy Name | Category | Effect | Severity | Description |
+|-------------|----------|--------|----------|-------------|"""
+        
+        policy_count = 0
+        for category, policy_data in self.custom_policies.items():
+            for policy in policy_data['policies']:
+                policy_name = policy.get('name', 'Unknown')
+                category_name = policy_data.get('category', 'Unknown')
+                effect = policy.get('effect', 'Unknown')
+                severity = policy.get('severity', 'Unknown').upper()
+                description = policy.get('description', 'No description')
+                
+                # Truncate long descriptions
+                if len(description) > 80:
+                    description = description[:77] + '...'
+                
+                table += f"\n| {policy_name} | {category_name} | {effect} | {severity} | {description} |"
+                policy_count += 1
+        
+        # Add summary
+        table += f"""
+
+### Policy Summary
+- **Total Policies Loaded**: {policy_count}
+- **Categories**: {len(self.custom_policies)}
+- **Policy Distribution by Severity**:"""
+        
+        # Count policies by severity
+        severity_counts = {'critical': 0, 'high': 0, 'medium': 0, 'low': 0, 'info': 0}
+        for category, policy_data in self.custom_policies.items():
+            for policy in policy_data['policies']:
+                severity = policy.get('severity', 'medium')
+                if severity in severity_counts:
+                    severity_counts[severity] += 1
+        
+        for severity, count in severity_counts.items():
+            if count > 0:
+                table += f"\n  - **{severity.upper()}**: {count} policies"
+        
+        return table
+    
     def _get_cache_key(self, architecture_analysis, environment):
         """Generate cache key from analysis and environment"""
         key_data = f"{str(architecture_analysis)}{environment}"
@@ -423,6 +759,64 @@ class PolicyChecker:
             oldest_key = next(iter(self._cache))
             del self._cache[oldest_key]
         self._cache[cache_key] = result
+
+    def get_policy_summary(self) -> Dict[str, Any]:
+        """Get summary of loaded policies"""
+        summary = {
+            'total_policies': 0,
+            'categories': {},
+            'severity_distribution': {
+                'critical': 0,
+                'high': 0,
+                'medium': 0,
+                'low': 0,
+                'info': 0
+            },
+            'effect_distribution': {
+                'Deny': 0,
+                'Audit': 0,
+                'DeployIfNotExists': 0,
+                'Modify': 0,
+                'AuditIfNotExists': 0,
+                'Disabled': 0
+            }
+        }
+        
+        for category, policy_data in self.custom_policies.items():
+            policy_count = len(policy_data['policies'])
+            summary['categories'][category] = {
+                'category_name': policy_data['category'],
+                'policy_count': policy_count,
+                'policies': []
+            }
+            
+            for policy in policy_data['policies']:
+                summary['total_policies'] += 1
+                summary['severity_distribution'][policy['severity']] += 1
+                
+                # Handle effect distribution safely
+                effect = policy['effect']
+                if effect in summary['effect_distribution']:
+                    summary['effect_distribution'][effect] += 1
+                else:
+                    summary['effect_distribution']['Audit'] += 1  # Default fallback
+                
+                summary['categories'][category]['policies'].append({
+                    'name': policy['name'],
+                    'effect': policy['effect'],
+                    'severity': policy['severity'],
+                    'description': policy['description'][:100] + '...' if len(policy['description']) > 100 else policy['description']
+                })
+        
+        return summary
+    
+    def reload_policies(self):
+        """Reload policies from the policies folder"""
+        print("🔄 Policy Checker: Reloading policies...")
+        self.custom_policies = self._load_custom_policies()
+        # Clear cache to force re-evaluation
+        self._cache.clear()
+        print("✅ Policy Checker: Policies reloaded")
 
     def fix_policy_violations(self, architecture_analysis: Dict[str, Any], policy_compliance: Dict[str, Any], environment: str) -> Dict[str, Any]:
         """
@@ -714,3 +1108,93 @@ class PolicyChecker:
             'optimized_components': [],
             'recommendations': []
         }
+    
+    def _load_custom_policies(self) -> Dict[str, Any]:
+        """Load custom Azure policies from the policies folder"""
+        policies = {}
+        policies_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'policies')
+        
+        if not os.path.exists(policies_dir):
+            print(f"⚠️ Policy Checker: Policies directory not found at {policies_dir}")
+            return policies
+            
+        policy_files = [f for f in os.listdir(policies_dir) if f.endswith('.json')]
+        print(f"📋 Policy Checker: Found {len(policy_files)} policy files")
+        
+        for policy_file in policy_files:
+            try:
+                policy_path = os.path.join(policies_dir, policy_file)
+                with open(policy_path, 'r', encoding='utf-8') as f:
+                    policy_content = json.load(f)
+                
+                # Handle both single policy and array of policies
+                policies_to_process = []
+                if isinstance(policy_content, list):
+                    policies_to_process = policy_content
+                elif isinstance(policy_content, dict):
+                    policies_to_process = [policy_content]
+                else:
+                    print(f"⚠️ Policy Checker: Invalid policy format in {policy_file}")
+                    continue
+                
+                # Process each policy
+                for idx, single_policy in enumerate(policies_to_process):
+                    if not isinstance(single_policy, dict):
+                        continue
+                        
+                    # Extract key information from policy
+                    policy_name = single_policy.get('displayName', f"{policy_file.replace('.json', '')}_{idx}")
+                    policy_category = single_policy.get('metadata', {}).get('category', 'General')
+                    policy_description = single_policy.get('description', '')
+                    
+                    # Categorize policies by their category and severity
+                    category_key = policy_category.lower().replace(' ', '_')
+                    if category_key not in policies:
+                        policies[category_key] = {
+                            'category': policy_category,
+                            'policies': []
+                        }
+                    
+                    # Determine policy severity based on effect
+                    policy_rule = single_policy.get('policyRule', {})
+                    effect = policy_rule.get('then', {}).get('effect', 'Audit')
+                    
+                    # Handle parameter references in effect
+                    if isinstance(effect, str) and effect.startswith('[parameters('):
+                        # Extract default value from parameters
+                        parameters = single_policy.get('parameters', {})
+                        effect_param = effect.replace('[parameters(', '').replace(')]', '').strip("'\"")
+                        if effect_param in parameters:
+                            effect = parameters[effect_param].get('defaultValue', 'Audit')
+                        else:
+                            effect = 'Audit'  # Default fallback
+                    
+                    # Map effect to severity
+                    severity_mapping = {
+                        'Deny': 'critical',
+                        'DeployIfNotExists': 'high',
+                        'Modify': 'medium',
+                        'Audit': 'low',
+                        'AuditIfNotExists': 'low',
+                        'Disabled': 'info'
+                    }
+                    
+                    severity = severity_mapping.get(effect, 'medium')
+                    
+                    policies[category_key]['policies'].append({
+                        'name': policy_name,
+                        'file': policy_file,
+                        'description': policy_description,
+                        'effect': effect,
+                        'severity': severity,
+                        'policy_rule': policy_rule,
+                        'parameters': single_policy.get('parameters', {}),
+                        'full_policy': single_policy
+                    })
+                    
+            except Exception as e:
+                print(f"⚠️ Policy Checker: Error loading policy {policy_file}: {str(e)}")
+                continue
+        
+        print(f"✅ Policy Checker: Loaded {sum(len(cat['policies']) for cat in policies.values())} policies across {len(policies)} categories")
+        return policies

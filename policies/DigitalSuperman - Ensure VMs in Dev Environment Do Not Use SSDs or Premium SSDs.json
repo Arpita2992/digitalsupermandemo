@@ -1,0 +1,34 @@
+{
+    "properties": {
+      "displayName": "Ensure VMs in Dev Environment Do Not Use SSDs or Premium SSDs",
+      "policyType": "Custom",
+      "mode": "All",
+      "description": "This policy ensures that virtual machines in the development environment do not use SSDs or Premium SSDs for their OS or data disks.",
+      "parameters": {},
+      "policyRule": {
+        "if": {
+          "allOf": [
+            {
+              "field": "tags.environment",
+              "equals": "development"
+            },
+            {
+              "anyOf": [
+                {
+                  "field": "Microsoft.Compute/disks.sku.name",
+                  "equals": "Premium_LRS"
+                },
+                {
+                  "field": "Microsoft.Compute/disks.sku.name",
+                  "equals": "StandardSSD_LRS"
+                }
+              ]
+            }
+          ]
+        },
+        "then": {
+          "effect": "deny"
+        }
+      }
+    }
+  }
