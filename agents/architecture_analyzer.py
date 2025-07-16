@@ -59,7 +59,7 @@ class ArchitectureAnalyzer:
 
     def analyze_architecture(self, extracted_content: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Analyze the extracted architecture diagram content
+        Analyze the extracted architecture diagram content with performance optimizations
         """
         
         # Handle both string and dictionary input
@@ -81,7 +81,7 @@ class ArchitectureAnalyzer:
             return cached_result
         
         try:
-            # First, validate if this is an Azure architecture
+            # First, validate if this is an Azure architecture (with performance optimization)
             validation_result = self._validate_azure_architecture(extracted_content)
             
             if not validation_result['is_azure_architecture']:
@@ -98,16 +98,19 @@ class ArchitectureAnalyzer:
                 self._save_to_cache(cache_key, error_result)
                 return error_result
             
-            # Prepare the prompt for OpenAI
-            analysis_prompt = self._create_analysis_prompt(extracted_content)
+            # Prepare the optimized prompt for OpenAI
+            analysis_prompt = self._create_optimized_analysis_prompt(extracted_content)
             
-            # Call OpenAI API with timeout
+            # Use faster model for simpler diagrams, GPT-4 for complex ones
+            model_to_use = self._select_optimal_model(extracted_content)
+            
+            # Call OpenAI API with optimized settings
             response = self.openai_client.chat.completions.create(
-                model=self.model_name,
+                model=model_to_use,
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are an expert Azure architect. Analyze the provided architecture diagram and extract all Azure components, their configurations, and relationships."
+                        "content": "You are an expert Azure architect. Analyze architecture diagrams quickly and accurately. Focus on identifying Azure services, their configurations, and key relationships. Provide structured JSON output."
                     },
                     {
                         "role": "user",
@@ -115,7 +118,8 @@ class ArchitectureAnalyzer:
                     }
                 ],
                 temperature=0.1,
-                timeout=300  # 5 minutes timeout for OpenAI API
+                max_tokens=2500,  # Increased slightly for better accuracy
+                timeout=90  # Reduced timeout to 90 seconds
             )
             
             # Parse the response
@@ -141,77 +145,294 @@ class ArchitectureAnalyzer:
                 'tokens_used': 0
             }
     
-    def _create_analysis_prompt(self, content: Dict[str, Any]) -> str:
-        """Create a detailed prompt for architecture analysis"""
+    def _create_optimized_analysis_prompt(self, content: Dict[str, Any]) -> str:
+        """Create an optimized prompt for faster and more accurate architecture analysis"""
+        
+        # Truncate content for faster processing
+        text_content = content.get('text', 'No text found')
+        if len(text_content) > 4000:
+            text_content = text_content[:4000] + "... [truncated for performance]"
         
         prompt = f"""
-        Please analyze the following Azure architecture diagram content and provide a structured analysis:
+        You are an expert Azure architect. Analyze this architecture diagram and extract Azure services with high accuracy.
 
-        Content Type: {content.get('type', 'unknown')}
-        Text Content: {content.get('text', 'No text found')}
-        Metadata: {json.dumps(content.get('metadata', {}), indent=2)}
-        
-        Please provide the analysis in the following JSON structure:
+        ARCHITECTURE CONTENT:
+        {text_content}
+
+        IMPORTANT: Focus on identifying these Azure services precisely:
+        - Virtual Machines (VM) -> "virtual machine"
+        - App Service (Web Apps) -> "app service"
+        - Azure SQL Database -> "sql database"
+        - Storage Account (Blob, Files) -> "storage account"
+        - Virtual Network (VNet) -> "virtual network"
+        - Application Gateway -> "application gateway"
+        - Load Balancer -> "load balancer"
+        - Azure Kubernetes Service (AKS) -> "kubernetes service"
+        - Container Registry (ACR) -> "container registry"
+        - Key Vault -> "key vault"
+        - Cosmos DB -> "cosmos db"
+        - Redis Cache -> "redis cache"
+        - Functions -> "functions"
+        - Logic Apps -> "logic apps"
+        - Service Bus -> "service bus"
+        - Event Hubs -> "event hubs"
+        - API Management -> "api management"
+        - CDN -> "cdn"
+        - Monitor/Application Insights -> "monitor"
+        - Active Directory -> "active directory"
+        - Security Center -> "security center"
+        - Data Factory -> "data factory"
+        - Synapse Analytics -> "synapse analytics"
+        - Machine Learning -> "machine learning"
+        - Cognitive Services -> "cognitive services"
+        - IoT Hub -> "iot hub"
+        - Stream Analytics -> "stream analytics"
+        - Power BI -> "power bi"
+        - Network Security Group -> "network security group"
+        - Firewall -> "firewall"
+        - VPN Gateway -> "vpn gateway"
+        - ExpressRoute -> "expressroute"
+        - Backup -> "backup"
+        - Site Recovery -> "site recovery"
+
+        Respond with ONLY this JSON structure (no additional text):
         {{
             "components": [
                 {{
-                    "name": "component_name",
-                    "type": "azure_service_type",
-                    "configuration": {{
-                        "sku": "service_tier",
-                        "region": "azure_region",
-                        "settings": {{}}
-                    }},
-                    "dependencies": ["dependent_component_names"]
+                    "name": "specific_service_name",
+                    "type": "exact_service_type_from_above_list",
+                    "configuration": {{"region": "region_if_mentioned", "sku": "tier_if_mentioned"}},
+                    "dependencies": ["other_service_names"]
                 }}
             ],
             "relationships": [
                 {{
-                    "source": "source_component",
-                    "target": "target_component",
-                    "type": "relationship_type",
-                    "configuration": {{}}
+                    "source": "source_service_name",
+                    "target": "target_service_name",
+                    "type": "connection_type"
                 }}
             ],
             "network_topology": {{
-                "vnets": [],
-                "subnets": [],
-                "nsgs": [],
-                "routing": []
+                "vnets": ["vnet_names_if_mentioned"],
+                "subnets": ["subnet_names_if_mentioned"]
             }},
-            "security_configuration": {{
-                "authentication": [],
-                "authorization": [],
-                "encryption": []
-            }},
-            "estimated_costs": {{
-                "monthly_estimate": "TBD",
-                "cost_factors": []
-            }}
+            "summary": "One sentence summary of the architecture"
         }}
-        
-        Focus on identifying:
-        1. Azure services (VMs, Storage, Databases, App Services, etc.)
-        2. Network components (VNets, Subnets, Load Balancers, etc.)
-        3. Security components (Key Vault, NSGs, App Gateway, etc.)
-        4. Data flow and dependencies
-        5. Configuration details where visible
+
+        CRITICAL: Use exact service type names from the list above. Be precise and comprehensive.
         """
         
         return prompt
     
     def _parse_analysis_response(self, response: str) -> Dict[str, Any]:
-        """Parse the OpenAI response into structured format"""
+        """Parse the OpenAI response into structured format with enhanced accuracy"""
         try:
             # Try to extract JSON from the response
             json_match = re.search(r'\{.*\}', response, re.DOTALL)
             if json_match:
-                return json.loads(json_match.group())
+                result = json.loads(json_match.group())
+                # Post-process to improve accuracy
+                return self._post_process_analysis(result)
             else:
                 # Fallback parsing if JSON not found
                 return self._fallback_parse(response)
         except json.JSONDecodeError:
             return self._fallback_parse(response)
+    
+    def _select_optimal_model(self, content: Dict[str, Any]) -> str:
+        """Select the optimal model based on content complexity"""
+        
+        text_content = content.get('text', '')
+        content_length = len(text_content)
+        
+        # Count complexity indicators
+        complexity_keywords = [
+            'microservices', 'kubernetes', 'aks', 'container', 'docker',
+            'machine learning', 'ai', 'cognitive', 'data factory', 'synapse',
+            'iot', 'stream analytics', 'event hubs', 'service bus',
+            'expressroute', 'vpn', 'firewall', 'security center',
+            'active directory', 'rbac', 'policy', 'compliance',
+            'hybrid', 'multi-region', 'disaster recovery', 'backup'
+        ]
+        
+        complexity_score = sum(1 for keyword in complexity_keywords if keyword.lower() in text_content.lower())
+        
+        # Simple heuristic: Use GPT-3.5-turbo for simple diagrams
+        if content_length < 2000 and complexity_score < 3:
+            return "gpt-3.5-turbo"
+        
+        # Use GPT-4 for complex diagrams
+        return self.model_name
+    
+    def _post_process_analysis(self, result: Dict[str, Any]) -> Dict[str, Any]:
+        """Post-process analysis results to improve accuracy"""
+        
+        # Normalize service types
+        components = result.get('components', [])
+        normalized_components = []
+        
+        service_type_mappings = {
+            # Common variations to standard names
+            'web app': 'app service',
+            'webapp': 'app service',
+            'azure app service': 'app service',
+            'web application': 'app service',
+            
+            'sql db': 'sql database',
+            'database': 'sql database',
+            'azure sql': 'sql database',
+            'sql server': 'sql database',
+            
+            'storage': 'storage account',
+            'blob storage': 'storage account',
+            'azure storage': 'storage account',
+            'blob': 'storage account',
+            
+            'vnet': 'virtual network',
+            'network': 'virtual network',
+            'azure virtual network': 'virtual network',
+            
+            'app gateway': 'application gateway',
+            'gateway': 'application gateway',
+            'azure application gateway': 'application gateway',
+            
+            'lb': 'load balancer',
+            'balancer': 'load balancer',
+            'azure load balancer': 'load balancer',
+            
+            'aks': 'kubernetes service',
+            'kubernetes': 'kubernetes service',
+            'azure kubernetes service': 'kubernetes service',
+            'k8s': 'kubernetes service',
+            
+            'acr': 'container registry',
+            'registry': 'container registry',
+            'azure container registry': 'container registry',
+            
+            'vault': 'key vault',
+            'keyvault': 'key vault',
+            'azure key vault': 'key vault',
+            
+            'cosmosdb': 'cosmos db',
+            'cosmos': 'cosmos db',
+            'azure cosmos db': 'cosmos db',
+            
+            'redis': 'redis cache',
+            'cache': 'redis cache',
+            'azure redis cache': 'redis cache',
+            
+            'function app': 'functions',
+            'azure functions': 'functions',
+            'serverless': 'functions',
+            
+            'logic app': 'logic apps',
+            'workflow': 'logic apps',
+            'azure logic apps': 'logic apps',
+            
+            'servicebus': 'service bus',
+            'messaging': 'service bus',
+            'azure service bus': 'service bus',
+            
+            'event hub': 'event hubs',
+            'events': 'event hubs',
+            'azure event hubs': 'event hubs',
+            
+            'apim': 'api management',
+            'api gateway': 'api management',
+            'azure api management': 'api management',
+            
+            'content delivery network': 'cdn',
+            'azure cdn': 'cdn',
+            
+            'monitoring': 'monitor',
+            'application insights': 'monitor',
+            'azure monitor': 'monitor',
+            
+            'aad': 'active directory',
+            'ad': 'active directory',
+            'azure active directory': 'active directory',
+            'azure ad': 'active directory',
+            
+            'asc': 'security center',
+            'azure security center': 'security center',
+            
+            'adf': 'data factory',
+            'azure data factory': 'data factory',
+            
+            'synapse': 'synapse analytics',
+            'sql dw': 'synapse analytics',
+            'data warehouse': 'synapse analytics',
+            'azure synapse analytics': 'synapse analytics',
+            
+            'ml': 'machine learning',
+            'azure ml': 'machine learning',
+            'azure machine learning': 'machine learning',
+            
+            'cognitive': 'cognitive services',
+            'ai services': 'cognitive services',
+            'azure cognitive services': 'cognitive services',
+            
+            'azure iot hub': 'iot hub',
+            'iot': 'iot hub',
+            
+            'stream': 'stream analytics',
+            'analytics': 'stream analytics',
+            'azure stream analytics': 'stream analytics',
+            
+            'powerbi': 'power bi',
+            'power bi premium': 'power bi',
+            'pbi': 'power bi',
+            
+            'nsg': 'network security group',
+            'security group': 'network security group',
+            'azure network security group': 'network security group',
+            
+            'azure firewall': 'firewall',
+            'fw': 'firewall',
+            
+            'vpn': 'vpn gateway',
+            'azure vpn gateway': 'vpn gateway',
+            
+            'express route': 'expressroute',
+            'azure expressroute': 'expressroute',
+            
+            'azure backup': 'backup',
+            'backup service': 'backup',
+            
+            'asr': 'site recovery',
+            'disaster recovery': 'site recovery',
+            'azure site recovery': 'site recovery'
+        }
+        
+        for component in components:
+            service_type = component.get('type', '').lower().strip()
+            
+            # Normalize service type
+            if service_type in service_type_mappings:
+                component['type'] = service_type_mappings[service_type]
+            elif service_type:
+                # Keep original if not in mappings
+                component['type'] = service_type
+            
+            # Clean up component name
+            component['name'] = component.get('name', '').strip()
+            
+            normalized_components.append(component)
+        
+        result['components'] = normalized_components
+        
+        # Remove duplicates based on service type
+        seen_types = set()
+        unique_components = []
+        for component in normalized_components:
+            component_type = component.get('type', '')
+            if component_type not in seen_types:
+                seen_types.add(component_type)
+                unique_components.append(component)
+        
+        result['components'] = unique_components
+        
+        return result
     
     def _fallback_parse(self, response: str) -> Dict[str, Any]:
         """Fallback parsing when JSON parsing fails"""
