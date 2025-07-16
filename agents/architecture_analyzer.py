@@ -10,6 +10,7 @@ import openai
 import os
 from dotenv import load_dotenv
 import hashlib
+from utils.trace_decorator import trace_agent
 
 load_dotenv()
 
@@ -40,6 +41,9 @@ class ArchitectureAnalyzer:
         # Simple cache for repeated content
         self._cache = {}
         self._max_cache_size = 100  # Limit cache size
+        
+        # Current trace ID for tracking
+        self.current_trace_id = None
     
     def _get_cache_key(self, content):
         """Generate cache key from content"""
@@ -57,10 +61,25 @@ class ArchitectureAnalyzer:
             del self._cache[oldest_key]
         self._cache[cache_key] = result
 
-    def analyze_architecture(self, extracted_content: Dict[str, Any]) -> Dict[str, Any]:
+    @trace_agent("architecture_analyzer")
+    def analyze_architecture(self, extracted_content: Dict[str, Any], trace_id: str = None) -> Dict[str, Any]:
         """
         Analyze the extracted architecture diagram content
         """
+        # Set trace context
+        self.current_trace_id = trace_id
+        
+        # Handle both string and dictionary input
+        if isinstance(extracted_content, str):
+            # Convert string to expected dictionary format
+            extracted_content = {
+                'type': 'text',
+                'text': extracted_content,
+                'metadata': {
+                    'filename': 'uploaded_file.txt'
+                }
+            }
+        
         # Check cache first
         cache_key = self._get_cache_key(extracted_content)
         cached_result = self._get_from_cache(cache_key)
@@ -73,17 +92,23 @@ class ArchitectureAnalyzer:
             validation_result = self._validate_azure_architecture(extracted_content)
             
             if not validation_result['is_azure_architecture']:
-                return {
+                error_result = {
                     'error': 'non_azure_architecture',
                     'error_message': validation_result['error_message'],
                     'detected_platforms': validation_result.get('detected_platforms', []),
-                    'suggestion': validation_result.get('suggestion', 'Please upload an Azure architecture diagram.')
+                    'non_azure_services': validation_result.get('non_azure_services_found', []),
+                    'suggestion': validation_result.get('suggestion', 'Please upload an Azure architecture diagram.'),
+                    'tokens_used': 0  # No tokens used for validation errors
                 }
+                
+                # Cache the error result
+                self._save_to_cache(cache_key, error_result)
+                return error_result
             
             # Prepare the prompt for OpenAI
             analysis_prompt = self._create_analysis_prompt(extracted_content)
             
-            # Call OpenAI API
+            # Call OpenAI API with timeout
             response = self.openai_client.chat.completions.create(
                 model=self.model_name,
                 messages=[
@@ -96,11 +121,18 @@ class ArchitectureAnalyzer:
                         "content": analysis_prompt
                     }
                 ],
-                temperature=0.1
+                temperature=0.1,
+                timeout=300  # 5 minutes timeout for OpenAI API
             )
             
             # Parse the response
             analysis_result = self._parse_analysis_response(response.choices[0].message.content)
+            
+            # Add token usage information
+            if hasattr(response, 'usage') and response.usage:
+                analysis_result['tokens_used'] = response.usage.total_tokens
+            else:
+                analysis_result['tokens_used'] = len(analysis_prompt.split()) * 2  # Rough estimate
             
             # Save to cache
             self._save_to_cache(cache_key, analysis_result)
@@ -112,7 +144,8 @@ class ArchitectureAnalyzer:
                 'error': f'Architecture analysis failed: {str(e)}',
                 'components': [],
                 'relationships': [],
-                'configurations': {}
+                'configurations': {},
+                'tokens_used': 0
             }
     
     def _create_analysis_prompt(self, content: Dict[str, Any]) -> str:
@@ -251,36 +284,71 @@ class ArchitectureAnalyzer:
                 metadata = extracted_content.get('metadata', {})
                 filename = metadata.get('filename', '').lower()
                 
-                # Strong indicators of non-Azure platforms
-                strong_non_azure_indicators = ['aws', 'amazon', 'gcp', 'google cloud', 'oracle cloud']
+                # Strong indicators of non-Azure platforms (more comprehensive)
+                strong_non_azure_indicators = [
+                    'aws', 'amazon', 'ec2', 's3', 'lambda', 'rds', 'dynamo',
+                    'gcp', 'google cloud', 'compute engine', 'cloud storage', 'big query',
+                    'oracle cloud', 'oci', 'heroku', 'digitalocean'
+                ]
                 
                 # Check filename and available text
                 all_text = f"{image_text} {filename}".lower()
+                
+                # Also check if the filename explicitly mentions AWS or other platforms
+                detected_platforms = []
                 
                 for indicator in strong_non_azure_indicators:
                     if indicator in all_text:
                         platform_name = {
                             'aws': 'AWS',
-                            'amazon': 'AWS', 
+                            'amazon': 'AWS',
+                            'ec2': 'AWS',
+                            's3': 'AWS',
+                            'lambda': 'AWS',
+                            'rds': 'AWS',
+                            'dynamo': 'AWS',
                             'gcp': 'Google Cloud',
                             'google cloud': 'Google Cloud',
-                            'oracle cloud': 'Oracle Cloud'
+                            'compute engine': 'Google Cloud',
+                            'cloud storage': 'Google Cloud',
+                            'big query': 'Google Cloud',
+                            'oracle cloud': 'Oracle Cloud',
+                            'oci': 'Oracle Cloud'
                         }.get(indicator, 'Non-Azure')
                         
-                        return {
-                            'is_azure_architecture': False,
-                            'error_message': f"❌ We only support Azure architecture diagrams. This appears to be a {platform_name} architecture based on the filename or content. Please upload an Azure-specific architecture diagram.",
-                            'detected_platforms': [platform_name],
-                            'confidence_score': 0.8,
-                            'suggestion': "Upload an architecture diagram that primarily uses Azure services like Virtual Machines, App Service, Storage Accounts, SQL Database, etc."
-                        }
+                        if platform_name not in detected_platforms:
+                            detected_platforms.append(platform_name)
                 
-                # For images without clear indicators, we'll allow processing but warn about limitations
-                print(f"⚠️ Image file detected - limited validation possible. Proceeding with analysis...")
+                # If we found strong non-Azure indicators, reject the file
+                if detected_platforms:
+                    return {
+                        'is_azure_architecture': False,
+                        'error_message': "❌ Non-Azure architecture detected. We only support Azure-related diagrams. Please upload Azure architecture diagrams.",
+                        'detected_platforms': detected_platforms,
+                        'confidence_score': 0.9,  # High confidence it's not Azure
+                        'suggestion': "Upload Azure architecture diagrams with services like Virtual Machines, App Service, Storage Accounts, SQL Database, etc."
+                    }
+                
+                # Check if filename contains Azure indicators
+                azure_indicators = ['azure', 'microsoft', 'az-', 'azure-']
+                azure_found = any(indicator in all_text for indicator in azure_indicators)
+                
+                if azure_found:
+                    print(f"✅ Image file with Azure indicators detected. Proceeding with analysis...")
+                    return {
+                        'is_azure_architecture': True,
+                        'confidence_score': 0.7,
+                        'note': f'Image file with Azure indicators in filename: {filename}'
+                    }
+                
+                # For images without clear indicators, we need to be more strict
+                # Ask user to use more descriptive filename or text-based format
                 return {
-                    'is_azure_architecture': True,
-                    'confidence_score': 0.5,
-                    'note': 'Image file - limited validation performed based on filename only'
+                    'is_azure_architecture': False,
+                    'error_message': "❌ Non-Azure architecture detected. We only support Azure-related diagrams. Please upload Azure architecture diagrams.",
+                    'detected_platforms': ['Unknown'],
+                    'confidence_score': 0.0,
+                    'suggestion': "Use text-based formats like .drawio, .svg, or .xml for better validation or include 'azure' in the filename."
                 }
             
             # Regular text-based validation for non-image files
@@ -299,6 +367,12 @@ Analyze the following architecture diagram content and determine:
 2. What cloud platforms/services are mentioned?
 3. Are there any non-Azure cloud services (AWS, GCP, Oracle, etc.)?
 
+Pay special attention to:
+- AWS services like EC2, S3, Lambda, RDS, DynamoDB, CloudFront, Route53, ELB, VPC, API Gateway
+- Google Cloud services like Compute Engine, Cloud Storage, BigQuery, Cloud Functions, GKE
+- Oracle Cloud services
+- Azure services like Virtual Machines, App Service, Storage Accounts, SQL Database, Cosmos DB, Key Vault
+
 Content to analyze:
 {content_text[:2000]}  # Limit for faster analysis
 
@@ -306,10 +380,11 @@ Respond in JSON format:
 {{
     "is_azure_architecture": true/false,
     "confidence_score": 0.0-1.0,
-    "azure_services_found": ["list of Azure services"],
-    "non_azure_services_found": ["list of non-Azure services"],
+    "azure_services_found": ["list of Azure services found"],
+    "non_azure_services_found": ["list of non-Azure services found"],
     "detected_platforms": ["Azure", "AWS", "GCP", etc.],
-    "primary_platform": "dominant platform name"
+    "primary_platform": "dominant platform name",
+    "reasoning": "brief explanation of the decision"
 }}
 """
             
@@ -327,7 +402,8 @@ Respond in JSON format:
                     }
                 ],
                 temperature=0.1,
-                max_tokens=500
+                max_tokens=500,
+                timeout=60  # 1 minute timeout for validation
             )
             
             # Parse validation response
@@ -339,31 +415,26 @@ Respond in JSON format:
             non_azure_services = validation_result.get('non_azure_services_found', [])
             detected_platforms = validation_result.get('detected_platforms', [])
             primary_platform = validation_result.get('primary_platform', 'Unknown')
+            reasoning = validation_result.get('reasoning', '')
             
-            # Create error message if not Azure architecture
-            if not is_azure or confidence < 0.6:
-                error_message = "❌ We only support Azure architecture diagrams."
-                
-                if non_azure_services:
-                    error_message += f" Detected non-Azure services: {', '.join(non_azure_services[:3])}."
-                
-                if primary_platform and primary_platform.lower() != 'azure':
-                    error_message += f" This appears to be a {primary_platform} architecture."
-                
-                error_message += " Please upload an Azure-specific architecture diagram."
+            # Stricter validation - require higher confidence for Azure or explicitly reject non-Azure
+            if not is_azure or confidence < 0.5 or (non_azure_services and len(non_azure_services) > 0):
+                error_message = "❌ Non-Azure architecture detected. We only support Azure-related diagrams. Please upload Azure architecture diagrams."
                 
                 return {
                     'is_azure_architecture': False,
                     'error_message': error_message,
                     'detected_platforms': detected_platforms,
                     'confidence_score': confidence,
-                    'suggestion': "Upload an architecture diagram that primarily uses Azure services like Virtual Machines, App Service, Storage Accounts, SQL Database, etc."
+                    'non_azure_services': non_azure_services,
+                    'suggestion': "Upload Azure architecture diagrams with services like Virtual Machines, App Service, Storage Accounts, SQL Database, etc."
                 }
             
             return {
                 'is_azure_architecture': True,
                 'confidence_score': confidence,
-                'azure_services_found': validation_result.get('azure_services_found', [])
+                'azure_services_found': validation_result.get('azure_services_found', []),
+                'note': f'Validated as Azure architecture with {confidence:.1%} confidence'
             }
             
         except Exception as e:
@@ -402,39 +473,69 @@ Respond in JSON format:
         """Fallback validation using keyword matching"""
         response_lower = response.lower()
         
-        # Azure service keywords
+        # Azure service keywords (more comprehensive)
         azure_keywords = [
             'azure', 'microsoft', 'app service', 'virtual machine', 'vm', 'storage account',
             'sql database', 'cosmos db', 'key vault', 'application gateway', 'load balancer',
-            'virtual network', 'subnet', 'resource group', 'subscription', 'tenant'
+            'virtual network', 'subnet', 'resource group', 'subscription', 'tenant',
+            'azure functions', 'service bus', 'event hubs', 'azure active directory',
+            'azure sql', 'azure storage', 'azure blob', 'azure table', 'azure queue',
+            'azure kubernetes service', 'aks', 'azure container', 'azure app service',
+            'azure web app', 'azure logic apps', 'azure data factory', 'azure synapse',
+            'azure devops', 'azure pipelines', 'azure boards', 'azure repos',
+            'azure monitor', 'azure security center', 'azure sentinel', 'azure firewall',
+            'azure front door', 'azure cdn', 'azure traffic manager', 'azure dns',
+            'azure backup', 'azure site recovery', 'azure migrate', 'azure arc'
         ]
         
-        # Non-Azure cloud keywords
+        # Non-Azure cloud keywords (more comprehensive)
         non_azure_keywords = [
-            'aws', 'amazon', 'ec2', 's3', 'lambda', 'rds', 'dynamo',
+            'aws', 'amazon', 'ec2', 's3', 'lambda', 'rds', 'dynamo', 'cloudfront',
+            'route53', 'elb', 'alb', 'nlb', 'vpc', 'api gateway', 'cloudwatch',
+            'cloudtrail', 'cloudformation', 'elastic beanstalk', 'ecs', 'eks',
+            'fargate', 'sqs', 'sns', 'kinesis', 'redshift', 'athena', 'glue',
             'google cloud', 'gcp', 'compute engine', 'cloud storage', 'big query',
-            'oracle cloud', 'oci', 'heroku', 'digitalocean', 'alibaba cloud'
+            'cloud functions', 'cloud run', 'gke', 'cloud sql', 'firebase',
+            'oracle cloud', 'oci', 'heroku', 'digitalocean', 'alibaba cloud',
+            'linode', 'vultr', 'ibm cloud', 'salesforce', 'snowflake'
         ]
+        
+        # AWS-specific patterns that are strong indicators
+        aws_strong_indicators = ['ec2', 's3', 'lambda', 'rds', 'dynamo', 'cloudfront', 'route53']
+        gcp_strong_indicators = ['compute engine', 'cloud storage', 'big query', 'cloud functions']
         
         azure_count = sum(1 for keyword in azure_keywords if keyword in response_lower)
         non_azure_count = sum(1 for keyword in non_azure_keywords if keyword in response_lower)
         
-        is_azure = azure_count > non_azure_count and azure_count > 0
-        confidence = min(azure_count / max(azure_count + non_azure_count, 1), 1.0)
+        # Check for strong AWS indicators
+        aws_strong_count = sum(1 for keyword in aws_strong_indicators if keyword in response_lower)
+        gcp_strong_count = sum(1 for keyword in gcp_strong_indicators if keyword in response_lower)
+        
+        # If we find strong AWS/GCP indicators, it's definitely not Azure
+        if aws_strong_count > 0 or gcp_strong_count > 0:
+            is_azure = False
+            confidence = 0.9  # High confidence it's not Azure
+        else:
+            is_azure = azure_count > non_azure_count and azure_count > 0
+            confidence = min(azure_count / max(azure_count + non_azure_count, 1), 1.0)
         
         detected_platforms = []
+        non_azure_services = []
+        
         if azure_count > 0:
             detected_platforms.append('Azure')
-        if 'aws' in response_lower or 'amazon' in response_lower:
+        if 'aws' in response_lower or any(keyword in response_lower for keyword in aws_strong_indicators):
             detected_platforms.append('AWS')
-        if 'google cloud' in response_lower or 'gcp' in response_lower:
+            non_azure_services.extend([kw for kw in aws_strong_indicators if kw in response_lower])
+        if 'google cloud' in response_lower or 'gcp' in response_lower or gcp_strong_count > 0:
             detected_platforms.append('Google Cloud')
+            non_azure_services.extend([kw for kw in gcp_strong_indicators if kw in response_lower])
         
         return {
             'is_azure_architecture': is_azure,
             'confidence_score': confidence,
             'azure_services_found': [kw for kw in azure_keywords if kw in response_lower],
-            'non_azure_services_found': [kw for kw in non_azure_keywords if kw in response_lower],
+            'non_azure_services_found': non_azure_services,
             'detected_platforms': detected_platforms,
             'primary_platform': 'Azure' if is_azure else (detected_platforms[0] if detected_platforms else 'Unknown')
         }

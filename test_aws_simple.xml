@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<architecture>
+  <title>AWS Architecture</title>
+  <services>
+    <service>EC2 instances</service>
+    <service>S3 buckets</service>
+    <service>RDS database</service>
+    <service>Lambda functions</service>
+    <service>API Gateway</service>
+    <service>DynamoDB</service>
+  </services>
+</architecture>

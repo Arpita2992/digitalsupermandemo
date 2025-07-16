@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Performance Dashboard - Digital Superman</title>
+    
+    <!-- Critical CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet">
+    
+    <!-- Chart.js for visualizations -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        /* Light Theme Override for Dashboard */
+        body {
+            background: #ffffff;
+            color: #1e293b;
+        }
+        
+        .dashboard-container {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.03) 0%, rgba(59, 130, 246, 0.03) 100%);
+            min-height: 100vh;
+            padding: 1rem 0;
+        }
+        
+        .dashboard-header {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+            padding: 1.5rem 0;
+            margin-bottom: 1.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.1);
+        }
+        
+        .dashboard-header h1 {
+            color: #1e293b !important;
+            font-weight: 700;
+        }
+        
+        .dashboard-header p {
+            color: #64748b !important;
+        }
+        
+        .dashboard-header .text-white {
+            color: #1e293b !important;
+        }
+        
+        .dashboard-header .text-white-50 {
+            color: #64748b !important;
+        }
+        
+        .metric-card {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+            height: fit-content;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border-color: rgba(139, 92, 246, 0.3);
+        }
+        
+        .metric-card h3, .metric-card h4 {
+            font-size: 1.1rem;
+            margin-bottom: 0.75rem;
+            color: #1e293b;
+        }
+        
+        .compact-metric {
+            text-align: center;
+            padding: 0.75rem;
+        }
+        
+        .compact-metric .metric-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #3b82f6;
+            margin: 0.25rem 0;
+        }
+        
+        .compact-metric .metric-label {
+            color: #64748b;
+            font-size: 0.8rem;
+        }
+        
+        .chart-container {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            height: 300px;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        }
+        
+        .chart-container h4 {
+            color: #1e293b;
+        }
+        
+        .mini-chart {
+            height: 250px;
+        }
+        
+        .agent-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .agent-performance {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem;
+            background: rgba(139, 92, 246, 0.05);
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
+            border: 1px solid rgba(139, 92, 246, 0.1);
+        }
+        
+        .agent-performance strong {
+            color: #1e293b;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-dot.warning {
+            background: #f59e0b;
+        }
+        
+        .status-dot.error {
+            background: #ef4444;
+        }
+        
+        .refresh-btn {
+            background: linear-gradient(135deg, #8b5cf6 0%, #3b82f6 100%);
+            border: none;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 0.875rem;
+        }
+        
+        .refresh-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-outline-light {
+            border-color: #8b5cf6 !important;
+            color: #8b5cf6 !important;
+            background-color: transparent;
+        }
+        
+        .btn-outline-light:hover {
+            background-color: #8b5cf6 !important;
+            border-color: #8b5cf6 !important;
+            color: white !important;
+        }
+        
+        .table-dark {
+            background-color: rgba(255, 255, 255, 0.95) !important;
+        }
+        
+        .table-dark th {
+            background-color: rgba(139, 92, 246, 0.1) !important;
+            color: #1e293b !important;
+            border-color: rgba(148, 163, 184, 0.2) !important;
+        }
+        
+        .table-dark td {
+            background-color: rgba(255, 255, 255, 0.95) !important;
+            color: #475569 !important;
+            border-color: rgba(148, 163, 184, 0.2) !important;
+        }
+        
+        .table-striped tbody tr:nth-of-type(odd) {
+            background-color: rgba(139, 92, 246, 0.03) !important;
+        }
+        
+        .table-striped tbody tr:nth-of-type(odd) td {
+            color: #475569 !important;
+        }
+        
+        .badge {
+            color: white !important;
+        }
+        
+        .badge.bg-success {
+            background-color: #10b981 !important;
+        }
+        
+        .badge.bg-danger {
+            background-color: #ef4444 !important;
+        }
+        
+        .badge.bg-warning {
+            background-color: #f59e0b !important;
+        }
+        
+        .token-usage {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            color: #1e293b;
+            margin-bottom: 1rem;
+            border: 1px solid rgba(139, 92, 246, 0.2);
+        }
+        
+        .token-usage h4 {
+            color: #1e293b !important;
+        }
+        
+        .token-usage small {
+            color: #475569 !important;
+        }
+        
+        /* General text color overrides for light theme */
+        .text-center {
+            color: #475569 !important;
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            color: #1e293b !important;
+        }
+        
+        p {
+            color: #64748b !important;
+        }
+        
+        .fas, .far, .fab {
+            color: inherit !important;
+        }
+        
+        strong {
+            color: #1e293b !important;
+        }
+        
+        .token-meter {
+            background: rgba(148, 163, 184, 0.2);
+            border-radius: 0.5rem;
+            height: 6px;
+            margin-top: 0.5rem;
+            overflow: hidden;
+        }
+        
+        .token-fill {
+            background: linear-gradient(90deg, #10b981, #f59e0b);
+            height: 100%;
+            transition: width 0.5s ease;
+        }
+        
+        .activity-table {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .activity-table table {
+            font-size: 0.875rem;
+            color: #1e293b;
+        }
+        
+        .table-dark {
+            background-color: rgba(255, 255, 255, 0.95);
+        }
+        
+        .table-dark th {
+            background-color: rgba(139, 92, 246, 0.1);
+            color: #1e293b;
+            border-color: rgba(148, 163, 184, 0.2);
+        }
+        
+        .table-dark td {
+            background-color: rgba(255, 255, 255, 0.95);
+            color: #475569;
+            border-color: rgba(148, 163, 184, 0.2);
+        }
+        
+        .table-striped tbody tr:nth-of-type(odd) {
+            background-color: rgba(139, 92, 246, 0.03);
+        }
+        
+        .system-health-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+        
+        .health-metric {
+            text-align: center;
+            padding: 0.75rem;
+            background: rgba(139, 92, 246, 0.05);
+            border-radius: 0.5rem;
+            border: 1px solid rgba(139, 92, 246, 0.1);
+        }
+        
+        .health-metric .metric-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #3b82f6;
+            margin: 0.25rem 0;
+        }
+        
+        .health-metric .metric-label {
+            color: #64748b;
+            font-size: 0.8rem;
+        }
+        
+        @media (max-width: 768px) {
+            .chart-container {
+                height: 250px;
+            }
+            .mini-chart {
+                height: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="container-fluid">
+            <!-- Dashboard Header -->
+            <div class="dashboard-header">
+                <div class="container">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h1 class="mb-0" style="color: #1e293b !important;">
+                                <i class="fas fa-chart-line me-2"></i>
+                                Performance Dashboard
+                            </h1>
+                            <p class="mb-0" style="color: #64748b !important;">Real-time system monitoring and analytics</p>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="refresh-btn" onclick="refreshDashboard()">
+                                <i class="fas fa-sync-alt me-1"></i>
+                                Refresh
+                            </button>
+                            <button class="btn btn-outline-light" onclick="window.close()">
+                                <i class="fas fa-times me-1"></i>
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="container">
+                <div class="row">
+                    <!-- System Health Overview -->
+                    <div class="col-md-6">
+                        <div class="metric-card">
+                            <h4><i class="fas fa-heartbeat"></i> System Health</h4>
+                            <div class="system-health-grid">
+                                <div class="health-metric">
+                                    <div class="metric-value" id="cpu-usage">--</div>
+                                    <div class="metric-label">CPU %</div>
+                                </div>
+                                <div class="health-metric">
+                                    <div class="metric-value" id="memory-usage">--</div>
+                                    <div class="metric-label">Memory %</div>
+                                </div>
+                                <div class="health-metric">
+                                    <div class="metric-value" id="disk-usage">--</div>
+                                    <div class="metric-label">Disk %</div>
+                                </div>
+                                <div class="health-metric">
+                                    <div class="metric-value" id="uptime">--</div>
+                                    <div class="metric-label">Uptime</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- AI Agent Performance -->
+                    <div class="col-md-6">
+                        <div class="metric-card">
+                            <h4><i class="fas fa-robot"></i> AI Agent Performance</h4>
+                            <div id="agent-performance">
+                                <div class="agent-performance">
+                                    <div class="agent-status">
+                                        <span class="status-dot" id="architecture-dot"></span>
+                                        <strong>Architecture Analyzer</strong>
+                                    </div>
+                                    <div>
+                                        <span id="architecture-success">--</span>% Success |
+                                        <span id="architecture-avg">--</span>ms Avg
+                                    </div>
+                                </div>
+                                <div class="agent-performance">
+                                    <div class="agent-status">
+                                        <span class="status-dot" id="policy-dot"></span>
+                                        <strong>Policy Checker</strong>
+                                    </div>
+                                    <div>
+                                        <span id="policy-success">--</span>% Success |
+                                        <span id="policy-avg">--</span>ms Avg
+                                    </div>
+                                </div>
+                                <div class="agent-performance">
+                                    <div class="agent-status">
+                                        <span class="status-dot" id="bicep-dot"></span>
+                                        <strong>Bicep Generator</strong>
+                                    </div>
+                                    <div>
+                                        <span id="bicep-success">--</span>% Success |
+                                        <span id="bicep-avg">--</span>ms Avg
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <!-- Token Usage -->
+                    <div class="col-md-4">
+                        <div class="token-usage">
+                            <h4><i class="fas fa-coins"></i> Token Usage</h4>
+                            <div class="row">
+                                <div class="col-6">
+                                    <div class="compact-metric">
+                                        <div class="metric-value" id="total-tokens">--</div>
+                                        <div class="metric-label">Total Tokens</div>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="compact-metric">
+                                        <div class="metric-value" id="estimated-cost">$--</div>
+                                        <div class="metric-label">Estimated Cost</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="token-meter">
+                                <div class="token-fill" id="token-fill" style="width: 0%"></div>
+                            </div>
+                            <small>Daily Budget: $50 | <span id="token-percentage">0%</span> used</small>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Stats -->
+                    <div class="col-md-8">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="metric-card">
+                                    <div class="compact-metric">
+                                        <div class="metric-value" id="total-requests">--</div>
+                                        <div class="metric-label">Total Requests</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="metric-card">
+                                    <div class="compact-metric">
+                                        <div class="metric-value" id="success-rate">--</div>
+                                        <div class="metric-label">Success Rate</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="metric-card">
+                                    <div class="compact-metric">
+                                        <div class="metric-value" id="avg-response-time">--</div>
+                                        <div class="metric-label">Avg Response</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="metric-card">
+                                    <div class="compact-metric">
+                                        <div class="metric-value" id="cache-hit-rate">--</div>
+                                        <div class="metric-label">Cache Hit Rate</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Charts Section -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="chart-container">
+                            <h4><i class="fas fa-chart-line"></i> Response Time Trends</h4>
+                            <div class="mini-chart">
+                                <canvas id="responseTimeChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="chart-container">
+                            <h4><i class="fas fa-chart-area"></i> Token Usage Over Time</h4>
+                            <div class="mini-chart">
+                                <canvas id="tokenUsageChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Recent Activity -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="metric-card">
+                            <h4><i class="fas fa-history"></i> Recent Activity</h4>
+                            <div class="activity-table">
+                                <table class="table table-dark table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Time</th>
+                                            <th>Function</th>
+                                            <th>Duration</th>
+                                            <th>Status</th>
+                                            <th>Tokens</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="activity-log">
+                                        <tr>
+                                            <td colspan="5" class="text-center">No recent activity</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Dashboard JavaScript
+        class PerformanceDashboard {
+            constructor() {
+                this.charts = {};
+                this.refreshInterval = 30000; // 30 seconds
+                this.init();
+            }
+
+            async init() {
+                await this.loadDashboardData();
+                this.setupCharts();
+                this.startAutoRefresh();
+            }
+
+            async loadDashboardData() {
+                try {
+                    const response = await fetch('/performance');
+                    const data = await response.json();
+                    this.updateDashboard(data);
+                } catch (error) {
+                    console.error('Failed to load dashboard data:', error);
+                }
+            }
+
+            updateDashboard(data) {
+                // Update system health
+                const systemHealth = data.system_health || {};
+                document.getElementById('cpu-usage').textContent = systemHealth.cpu_percent || '--';
+                document.getElementById('memory-usage').textContent = systemHealth.memory_percent || '--';
+                document.getElementById('disk-usage').textContent = systemHealth.disk_percent || '--';
+                document.getElementById('uptime').textContent = systemHealth.uptime || '--';
+
+                // Update token usage
+                const tokenUsage = data.token_usage || {};
+                document.getElementById('total-tokens').textContent = tokenUsage.total || '--';
+                document.getElementById('estimated-cost').textContent = '$' + (tokenUsage.estimated_cost || '0.00');
+                
+                const percentage = tokenUsage.budget_percentage || 0;
+                document.getElementById('token-percentage').textContent = percentage + '%';
+                document.getElementById('token-fill').style.width = percentage + '%';
+
+                // Update AI Agent performance
+                const agentPerformance = data.agent_performance || {};
+                this.updateAgentMetrics('architecture', agentPerformance.architecture_analyzer || {});
+                this.updateAgentMetrics('policy', agentPerformance.policy_checker || {});
+                this.updateAgentMetrics('bicep', agentPerformance.bicep_generator || {});
+
+                // Update quick stats
+                const performanceStats = data.performance_stats || {};
+                document.getElementById('total-requests').textContent = performanceStats.total_requests || '--';
+                document.getElementById('success-rate').textContent = (performanceStats.success_rate || 0) + '%';
+                document.getElementById('avg-response-time').textContent = (performanceStats.avg_response_time || 0) + 'ms';
+                document.getElementById('cache-hit-rate').textContent = (performanceStats.cache_hit_rate || 0) + '%';
+
+                // Update activity log
+                this.updateActivityLog(data.recent_activity || []);
+            }
+
+            updateAgentMetrics(agentType, metrics) {
+                const successRate = metrics.success_rate || 0;
+                const avgDuration = metrics.avg_duration || 0;
+                
+                document.getElementById(`${agentType}-success`).textContent = successRate;
+                document.getElementById(`${agentType}-avg`).textContent = avgDuration;
+                
+                // Update status dot color
+                const dot = document.getElementById(`${agentType}-dot`);
+                if (successRate >= 90) {
+                    dot.className = 'status-dot';
+                } else if (successRate >= 70) {
+                    dot.className = 'status-dot warning';
+                } else {
+                    dot.className = 'status-dot error';
+                }
+            }
+
+            updateActivityLog(activities) {
+                const tbody = document.getElementById('activity-log');
+                if (!activities || activities.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center">No recent activity</td></tr>';
+                    return;
+                }
+
+                const rows = activities.slice(0, 10).map(activity => `
+                    <tr>
+                        <td>${activity.timestamp}</td>
+                        <td>${activity.function}</td>
+                        <td>${activity.duration}ms</td>
+                        <td>
+                            <span class="badge ${activity.status === 'success' ? 'bg-success' : 'bg-danger'}">
+                                ${activity.status}
+                            </span>
+                        </td>
+                        <td>${activity.tokens || 0}</td>
+                    </tr>
+                `).join('');
+                
+                tbody.innerHTML = rows;
+            }
+
+            setupCharts() {
+                this.setupResponseTimeChart();
+                this.setupTokenUsageChart();
+            }
+
+            setupResponseTimeChart() {
+                const ctx = document.getElementById('responseTimeChart').getContext('2d');
+                this.charts.responseTime = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: 'Response Time (ms)',
+                            data: [],
+                            borderColor: '#8b5cf6',
+                            backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                            tension: 0.1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    color: '#475569'
+                                },
+                                grid: {
+                                    color: 'rgba(148, 163, 184, 0.2)'
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    color: '#475569'
+                                },
+                                grid: {
+                                    color: 'rgba(148, 163, 184, 0.2)'
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: '#1e293b'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            setupTokenUsageChart() {
+                const ctx = document.getElementById('tokenUsageChart').getContext('2d');
+                this.charts.tokenUsage = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: 'Token Usage',
+                            data: [],
+                            backgroundColor: 'rgba(59, 130, 246, 0.6)',
+                            borderColor: '#3b82f6',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    color: '#475569'
+                                },
+                                grid: {
+                                    color: 'rgba(148, 163, 184, 0.2)'
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    color: '#475569'
+                                },
+                                grid: {
+                                    color: 'rgba(148, 163, 184, 0.2)'
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: '#1e293b'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            startAutoRefresh() {
+                setInterval(() => {
+                    this.loadDashboardData();
+                }, this.refreshInterval);
+            }
+        }
+
+        // Initialize dashboard when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new PerformanceDashboard();
+        });
+
+        // Refresh button handler
+        function refreshDashboard() {
+            location.reload();
+        }
+    </script>
+</body>
+</html>

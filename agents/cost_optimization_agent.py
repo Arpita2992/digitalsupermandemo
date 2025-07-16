@@ -6,10 +6,11 @@ Optimizes resources based on environment (development/production) before Bicep g
 
 import json
 import os
-from typing import Dict, List, Any, Tuple
+from typing import Dict, List, Any, Tuple, Optional
 import openai
 from dotenv import load_dotenv
 import hashlib
+from utils.trace_decorator import trace_agent
 
 load_dotenv()
 
@@ -43,6 +44,9 @@ class CostOptimizationAgent:
         # Cache for optimization recommendations
         self._optimization_cache = {}
         self._max_cache_size = 50
+        
+        # Trace ID for performance tracking
+        self.current_trace_id = None
     
     def _load_cost_optimization_framework(self) -> Dict[str, Any]:
         """Load Microsoft's Well-Architected Framework cost optimization principles"""
@@ -185,11 +189,16 @@ class CostOptimizationAgent:
             }
         }
     
-    def optimize_architecture(self, architecture_analysis: Dict[str, Any], policy_compliance: Dict[str, Any], environment: str = 'development') -> Dict[str, Any]:
+    @trace_agent("cost_optimization_agent")
+    def optimize_architecture(self, architecture_analysis: Dict[str, Any], policy_compliance: Dict[str, Any], environment: str = 'development', trace_id: Optional[str] = None) -> Dict[str, Any]:
         """
         Main method to optimize architecture for cost based on Microsoft's framework
         """
         try:
+            # Set trace context
+            if trace_id:
+                self.current_trace_id = trace_id
+                
             print(f"🔧 Cost Optimization Agent: Starting optimization for {environment} environment")
             
             # Generate cache key
@@ -366,7 +375,8 @@ Ensure recommendations are specific to {environment} environment.
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.3,
-                max_tokens=1500
+                max_tokens=1500,
+                timeout=300  # 5 minutes timeout for OpenAI API
             )
             
             ai_response = response.choices[0].message.content.strip()

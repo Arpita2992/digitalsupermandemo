@@ -1,0 +1,37 @@
+AWS Architecture Diagram
+
+This comprehensive AWS architecture includes the following services:
+
+Compute Services:
+- EC2 instances for application servers
+- Lambda functions for serverless processing
+- Auto Scaling Groups for scalability
+
+Storage Services:
+- S3 buckets for object storage
+- EBS volumes for block storage
+- EFS for network file systems
+
+Database Services:
+- RDS for relational databases
+- DynamoDB for NoSQL databases
+- ElastiCache for caching
+
+Networking Services:
+- VPC for networking
+- Route53 for DNS management
+- CloudFront for CDN
+- Application Load Balancer (ALB)
+- Network Load Balancer (NLB)
+
+Security Services:
+- IAM for identity and access management
+- AWS WAF for web application firewall
+- KMS for key management
+
+API and Integration:
+- API Gateway for REST APIs
+- SQS for messaging
+- SNS for notifications
+
+This is clearly an AWS-based architecture using Amazon Web Services.

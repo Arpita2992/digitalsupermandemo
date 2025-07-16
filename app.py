@@ -57,6 +57,110 @@ def allowed_file(filename):
 def index():
     return render_template('index.html')
 
+@app.route('/dashboard')
+def dashboard():
+    """Performance dashboard with real-time metrics"""
+    return render_template('dashboard.html')
+
+@app.route('/performance')
+def performance_metrics():
+    """API endpoint for performance dashboard metrics"""
+    from utils.trace_manager import trace_manager
+    
+    # Get dashboard metrics from trace manager
+    metrics = trace_manager.get_dashboard_metrics(hours=24)
+    
+    # Add system health metrics (basic)
+    import psutil
+    try:
+        system_health = {
+            'cpu_percent': f"{psutil.cpu_percent():.1f}",
+            'memory_percent': f"{psutil.virtual_memory().percent:.1f}",
+            'disk_percent': f"{psutil.disk_usage('/').percent:.1f}",
+            'uptime': f"{int(time.time() - psutil.boot_time())}s"
+        }
+    except:
+        system_health = {
+            'cpu_percent': '--',
+            'memory_percent': '--', 
+            'disk_percent': '--',
+            'uptime': '--'
+        }
+    
+    # Calculate token usage and cost
+    token_usage = {
+        'total': metrics.get('total_tokens', 0),
+        'estimated_cost': f"{metrics.get('estimated_cost', 0):.4f}",
+        'budget_percentage': min(metrics.get('estimated_cost', 0) / 50 * 100, 100)  # $50 daily budget
+    }
+    
+    # Format agent performance
+    agent_performance = {
+        'architecture_analyzer': metrics.get('agent_performance', {}).get('architecture_analyzer', {
+            'success_rate': 0,
+            'avg_duration': 0
+        }),
+        'policy_checker': metrics.get('agent_performance', {}).get('policy_checker', {
+            'success_rate': 0,
+            'avg_duration': 0
+        }),
+        'bicep_generator': metrics.get('agent_performance', {}).get('bicep_generator', {
+            'success_rate': 0,
+            'avg_duration': 0
+        })
+    }
+    
+    return jsonify({
+        'system_health': system_health,
+        'token_usage': token_usage,
+        'agent_performance': agent_performance,
+        'performance_stats': {
+            'total_requests': metrics.get('total_requests', 0),
+            'success_rate': metrics.get('success_rate', 0),
+            'avg_response_time': metrics.get('avg_response_time', 0),
+            'cache_hit_rate': 75  # Placeholder
+        },
+        'recent_activity': metrics.get('recent_activity', [])
+    })
+
+@app.route('/trace/<trace_id>')
+def get_trace_details(trace_id):
+    """Get detailed information about a specific trace"""
+    from utils.trace_manager import trace_manager
+    
+    trace_metrics = trace_manager.get_trace_metrics(trace_id)
+    if not trace_metrics:
+        return jsonify({'error': 'Trace not found'}), 404
+    
+    return jsonify({
+        'trace_id': trace_id,
+        'metrics': trace_metrics.__dict__ if hasattr(trace_metrics, '__dict__') else trace_metrics,
+        'status': 'active' if trace_id in trace_manager.active_traces else 'completed'
+    })
+
+@app.route('/create-trace', methods=['POST'])
+def create_trace():
+    """Create a new trace ID for request tracking"""
+    from utils.trace_manager import trace_manager
+    
+    data = request.get_json()
+    environment = data.get('environment', 'development')
+    file_name = data.get('file_name', '')
+    file_size = data.get('file_size', 0)
+    
+    trace_id = trace_manager.create_trace(
+        user_session=request.headers.get('X-Session-ID', 'anonymous'),
+        file_name=file_name,
+        file_size=file_size,
+        environment=environment
+    )
+    
+    return jsonify({
+        'success': True,
+        'trace_id': trace_id,
+        'timestamp': time.time()
+    })
+
 @app.route('/upload', methods=['POST'])
 @perf_monitor.time_function("upload_file")
 def upload_file():
@@ -76,25 +180,46 @@ def upload_file():
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     file.save(filepath)
     
+    # Get trace ID from frontend or create new one
+    from utils.trace_manager import trace_manager
+    trace_id = request.form.get('trace_id')
+    
+    if trace_id:
+        # Use trace ID from frontend and update with file info
+        trace_manager.update_trace_file_info(trace_id, filename, os.path.getsize(filepath))
+    else:
+        # Create new trace ID for this request
+        trace_id = trace_manager.create_trace(
+            user_session=request.headers.get('X-Session-ID', 'anonymous'),
+            file_name=filename,
+            file_size=os.path.getsize(filepath),
+            environment=environment
+        )
+    
     try:
-        # Process through optimized agent pipeline
-        result = process_architecture_diagram_async(filepath, environment)
+        # Process through optimized agent pipeline with trace_id
+        result = process_architecture_diagram_async(filepath, environment, trace_id)
         
         # Check if there was a validation error
         if isinstance(result, dict) and result.get('error'):
             error_type = result.get('error_type')
             if error_type == 'non_azure_architecture':
+                # Complete trace with validation error
+                trace_manager.complete_trace(trace_id, status='validation_failed')
                 return jsonify({
                     'success': False,
                     'error_type': 'non_azure_architecture',
                     'message': result.get('message', 'We only support Azure architecture diagrams.'),
                     'detected_platforms': result.get('detected_platforms', []),
-                    'suggestion': result.get('suggestion', 'Please upload an Azure-specific architecture diagram.')
+                    'non_azure_services': result.get('non_azure_services', []),
+                    'suggestion': result.get('suggestion', 'Please upload an Azure-specific architecture diagram.'),
+                    'trace_id': trace_id
                 })
             else:
                 return jsonify({
                     'success': False,
-                    'message': result.get('message', 'An error occurred during processing.')
+                    'message': result.get('message', 'An error occurred during processing.'),
+                    'error_details': result.get('error_details', '')
                 })
         
         # Extract zip filename and processing summary from successful result
@@ -111,14 +236,21 @@ def upload_file():
             'success': True,
             'message': 'File processed successfully',
             'download_url': url_for('download_result', filename=zip_filename),
-            'processing_summary': processing_summary
+            'processing_summary': processing_summary,
+            'trace_id': trace_id
         })
     except Exception as e:
+        # Complete trace with error status
+        if 'trace_id' in locals():
+            from utils.trace_manager import trace_manager
+            trace_manager.complete_trace(trace_id, status='failed')
         return jsonify({'success': False, 'message': f'Error: {str(e)}'})
 
 @perf_monitor.time_function("process_architecture_diagram")
-def process_architecture_diagram_async(filepath, environment):
+def process_architecture_diagram_async(filepath, environment, trace_id=None):
     """Optimized processing with parallel agent execution and caching"""
+    from utils.trace_manager import trace_manager
+    
     try:
         # Generate cache key based on file content hash and environment
         cache_key = f"process_{hash(filepath)}_{environment}"
@@ -127,13 +259,16 @@ def process_architecture_diagram_async(filepath, environment):
         cached_result = cache.get(cache_key)
         if cached_result:
             print("🚀 Using cached result for file processing")
+            # Complete trace for cached result
+            if trace_id:
+                trace_manager.complete_trace(trace_id, status='completed_cached')
             return cached_result
         
         # Step 1: Extract content from the uploaded file (cached)
         content = get_file_processor().process_file(filepath)
         
         # Step 2: Analyze architecture with Agent 1
-        future_arch = executor.submit(get_arch_analyzer().analyze_architecture, content)
+        future_arch = executor.submit(get_arch_analyzer().analyze_architecture, content, trace_id)
         architecture_analysis = future_arch.result()
         
         # Check if architecture validation failed (non-Azure resources detected)
@@ -143,11 +278,12 @@ def process_architecture_diagram_async(filepath, environment):
                 'error_type': 'non_azure_architecture',
                 'message': architecture_analysis.get('error_message', 'We only support Azure architecture diagrams.'),
                 'detected_platforms': architecture_analysis.get('detected_platforms', []),
+                'non_azure_services': architecture_analysis.get('non_azure_services', []),
                 'suggestion': architecture_analysis.get('suggestion', 'Please upload an Azure-specific architecture diagram.')
             }
         
         # Step 3: Parallel processing of Policy and Cost optimization
-        future_policy = executor.submit(get_policy_checker().check_compliance, architecture_analysis, environment)
+        future_policy = executor.submit(get_policy_checker().check_compliance, architecture_analysis, environment, trace_id)
         
         # Wait for policy check to complete
         policy_compliance = future_policy.result()
@@ -164,7 +300,7 @@ def process_architecture_diagram_async(filepath, environment):
             
             # Re-run policy check on fixed analysis
             print("🔍 Re-checking compliance after auto-fixes...")
-            updated_policy_compliance = get_policy_checker().check_compliance(fixed_analysis, environment)
+            updated_policy_compliance = get_policy_checker().check_compliance(fixed_analysis, environment, trace_id)
             
             # Update policy result with fix information
             policy_compliance['fixes_applied'] = fixed_analysis.get('metadata', {}).get('policy_fixes_applied', [])
@@ -173,13 +309,13 @@ def process_architecture_diagram_async(filepath, environment):
         
         # Step 4: Run cost optimization and bicep generation in parallel
         future_cost = executor.submit(get_cost_optimizer().optimize_architecture, 
-                                     fixed_analysis, policy_compliance, environment)
+                                     fixed_analysis, policy_compliance, environment, trace_id)
         
         cost_optimization = future_cost.result()
         
         # Step 5: Generate bicep templates
         future_bicep = executor.submit(get_bicep_generator().generate_bicep_templates,
-                                      fixed_analysis, policy_compliance, cost_optimization, environment)
+                                      fixed_analysis, policy_compliance, cost_optimization, environment, trace_id)
         
         bicep_templates = future_bicep.result()
         
@@ -213,15 +349,23 @@ def process_architecture_diagram_async(filepath, environment):
         
         result = {
             'zip_filename': zip_filename,
-            'processing_summary': processing_summary
+            'processing_summary': processing_summary,
+            'trace_id': trace_id
         }
         
         # Cache the result
         cache.set(cache_key, result)
         
+        # Complete the trace
+        if trace_id:
+            trace_manager.complete_trace(trace_id, status='completed')
+        
         return result
         
     except Exception as e:
+        # Complete trace with error status
+        if trace_id:
+            trace_manager.complete_trace(trace_id, status='failed')
         raise Exception(f"Processing failed: {str(e)}")
 
 @app.route('/download/<filename>')

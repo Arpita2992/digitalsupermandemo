@@ -103,16 +103,16 @@ class ZipGenerator:
         
         # 1. Enhanced Policy Compliance Report with custom policies table
         compliance_report = self._generate_enhanced_policy_compliance_report(compliance, environment)
-        zipf.writestr("POLICY_COMPLIANCE_REPORT.md", compliance_report)
+        zipf.writestr("reports/POLICY_COMPLIANCE_REPORT.md", compliance_report)
         
         # 2. Auto-fix summary if fixes were applied
         if compliance.get('fixes_applied'):
             autofix_report = self._generate_autofix_summary(compliance.get('fixes_applied', []))
-            zipf.writestr("AUTOFIX_SUMMARY.md", autofix_report)
+            zipf.writestr("reports/AUTOFIX_SUMMARY.md", autofix_report)
         
         # 3. Simple README with usage instructions
         readme = self._generate_simple_readme()
-        zipf.writestr("README.md", readme)
+        zipf.writestr("reports/README.md", readme)
     
     def _add_cost_estimation(self, zipf: zipfile.ZipFile, architecture_analysis: Dict[str, Any], environment: str):
         """Add cost estimation report to ZIP"""
@@ -124,7 +124,7 @@ class ZipGenerator:
             
             # Generate cost report
             cost_report = self.cost_estimator.generate_cost_report(cost_estimation)
-            zipf.writestr("COST_ESTIMATION_REPORT.md", cost_report)
+            zipf.writestr("reports/COST_ESTIMATION_REPORT.md", cost_report)
             
             # Also add cost estimation as JSON for programmatic access
             cost_json = json.dumps(cost_estimation, indent=2)
@@ -145,7 +145,7 @@ An error occurred while generating the cost estimation:
 
 **Note**: Cost estimation is an optional feature and does not affect the core functionality.
 """
-            zipf.writestr("COST_ESTIMATION_ERROR.md", error_report)
+            zipf.writestr("reports/COST_ESTIMATION_ERROR.md", error_report)
     
     def _add_cost_optimization_report(self, zipf: zipfile.ZipFile, cost_optimization: Dict[str, Any], environment: str):
         """Add cost optimization report to ZIP"""
@@ -160,7 +160,7 @@ An error occurred while generating the cost estimation:
             report_content = cost_optimizer.generate_cost_optimization_report(cost_optimization)
             
             # Add to ZIP
-            zipf.writestr(f'docs/cost_optimization_report_{environment}.md', report_content)
+            zipf.writestr(f'reports/cost_optimization_report_{environment}.md', report_content)
             
             # Also add raw optimization data as JSON
             optimization_data = {
@@ -190,7 +190,7 @@ Could not generate detailed cost optimization report: {str(e)}
 
 Please refer to the architecture analysis and policy compliance reports for additional context.
 """
-            zipf.writestr(f'docs/cost_optimization_report_{environment}.md', fallback_report)
+            zipf.writestr(f'reports/cost_optimization_report_{environment}.md', fallback_report)
 
     def _generate_enhanced_policy_compliance_report(self, compliance: Dict[str, Any], environment: str) -> str:
         """Generate enhanced policy compliance report with custom policies table at the top"""

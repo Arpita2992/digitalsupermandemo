@@ -23,7 +23,45 @@ class PerformanceMonitor:
         self.max_entries = max_entries
         self.cache_stats = {'hits': 0, 'misses': 0, 'size': 0}
         self.system_stats = {}
+        self.token_usage = defaultdict(int)
+        self.ai_agent_stats = defaultdict(dict)
         self.lock = threading.Lock()
+        
+    def record_token_usage(self, agent_name: str, tokens: int, cost: float = 0.0):
+        """Record token usage for AI agents"""
+        with self.lock:
+            self.token_usage[f"{agent_name}_tokens"] += tokens
+            self.token_usage[f"{agent_name}_cost"] += cost
+            self.token_usage["total_tokens"] += tokens
+            self.token_usage["total_cost"] += cost
+    
+    def record_ai_agent_performance(self, agent_name: str, duration: float, success: bool, tokens: int = 0):
+        """Record AI agent performance metrics"""
+        with self.lock:
+            if agent_name not in self.ai_agent_stats:
+                self.ai_agent_stats[agent_name] = {
+                    'total_calls': 0,
+                    'successful_calls': 0,
+                    'failed_calls': 0,
+                    'total_duration': 0,
+                    'total_tokens': 0,
+                    'avg_duration': 0,
+                    'success_rate': 0
+                }
+            
+            stats = self.ai_agent_stats[agent_name]
+            stats['total_calls'] += 1
+            stats['total_duration'] += duration
+            stats['total_tokens'] += tokens
+            
+            if success:
+                stats['successful_calls'] += 1
+            else:
+                stats['failed_calls'] += 1
+            
+            # Update averages
+            stats['avg_duration'] = stats['total_duration'] / stats['total_calls']
+            stats['success_rate'] = (stats['successful_calls'] / stats['total_calls']) * 100
         
     def time_function(self, func_name: str):
         """Decorator to time function execution with enhanced metrics"""
@@ -148,6 +186,12 @@ class PerformanceMonitor:
                     'disk_usage_percent': 0,
                     'note': 'psutil not available - install for system metrics'
                 }
+            
+            # Token usage statistics
+            stats['token_usage'] = dict(self.token_usage)
+            
+            # AI agent statistics
+            stats['ai_agents'] = dict(self.ai_agent_stats)
             
             return stats
     
@@ -308,3 +352,44 @@ def log_memory_usage(func):
         print(f"🧠 {func.__name__} memory monitoring not available (psutil missing)")
         return result
     return wrapper
+
+# AI Agent tracking decorator
+def track_ai_agent(agent_name: str, estimated_tokens: int = 0):
+    """Decorator to track AI agent performance and token usage"""
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            start_time = time.time()
+            success = False
+            tokens_used = estimated_tokens
+            
+            try:
+                result = func(*args, **kwargs)
+                success = True
+                
+                # Try to extract actual token usage from result if available
+                if isinstance(result, dict) and 'token_usage' in result:
+                    tokens_used = result['token_usage']
+                
+                return result
+            except Exception as e:
+                success = False
+                raise
+            finally:
+                duration = time.time() - start_time
+                perf_monitor.record_ai_agent_performance(agent_name, duration, success, tokens_used)
+                
+                # Record token usage
+                cost = tokens_used * 0.002  # Approximate cost per token
+                perf_monitor.record_token_usage(agent_name, tokens_used, cost)
+                
+                print(f"🤖 {agent_name}: {duration:.2f}s, {tokens_used} tokens, {'✅' if success else '❌'}")
+        
+        return wrapper
+    return decorator
+
+print("🚀 Performance monitoring with AI agent tracking initialized")
+if PSUTIL_AVAILABLE:
+    print("✅ System metrics available")
+else:
+    print("⚠️ Install psutil for detailed system metrics: pip install psutil")

@@ -62,6 +62,31 @@ body {
   font-size: 1.8rem;
 }
 
+.dashboard-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dashboard-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: white;
+  transform: translateY(-1px);
+}
+
+.dashboard-btn i {
+  color: #fbbf24;
+}
+
 .status-indicator {
   background: rgba(16, 185, 129, 0.2);
   color: #10b981;
@@ -498,8 +523,10 @@ body {
   background: rgba(255, 255, 255, 0.98);
   border-radius: 16px;
   padding: 2rem;
-  max-width: 400px;
-  width: 90%;
+  max-width: 600px;
+  width: 95%;
+  max-height: 80vh;
+  overflow-y: auto;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
   border: 1px solid rgba(255, 255, 255, 0.3);
   z-index: 9999;
@@ -548,6 +575,9 @@ body {
   color: var(--text-secondary);
   line-height: 1.6;
   margin-bottom: 1.5rem;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
 }
 
 .custom-alert-button {
