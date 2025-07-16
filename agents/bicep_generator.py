@@ -9,7 +9,6 @@ from typing import Dict, List, Any, Optional
 import openai
 from dotenv import load_dotenv
 import hashlib
-from utils.trace_decorator import trace_agent
 
 load_dotenv()
 
@@ -43,18 +42,11 @@ class BicepGenerator:
         # Template cache for faster generation
         self._template_cache = {}
         self._max_cache_size = 30
-        
-        # Trace ID for performance tracking
-        self.current_trace_id = None
     
-    @trace_agent("bicep_generator")
-    def generate_bicep_templates(self, architecture_analysis: Dict[str, Any], policy_compliance: Dict[str, Any], cost_optimization: Dict[str, Any] = None, environment: str = 'dev', trace_id: Optional[str] = None) -> Dict[str, Any]:
+    def generate_bicep_templates(self, architecture_analysis: Dict[str, Any], policy_compliance: Dict[str, Any], cost_optimization: Dict[str, Any] = None, environment: str = 'dev') -> Dict[str, Any]:
         """
         Generate Bicep templates with cost optimization considerations
         """
-        # Set trace context
-        if trace_id:
-            self.current_trace_id = trace_id
         
         # Check cache first
         cache_key = self._get_cache_key(architecture_analysis, policy_compliance, cost_optimization, environment)

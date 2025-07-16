@@ -7,7 +7,6 @@ import json
 import os
 from typing import Dict, List, Any, Optional
 import hashlib
-from utils.trace_decorator import trace_agent
 
 try:
     from openai import OpenAI
@@ -50,9 +49,6 @@ class PolicyChecker:
             self.openai_client = None
             self.model_name = None
         
-        # Current trace ID for tracking
-        self.current_trace_id = None
-        
         # Load policy templates
         self.policy_templates = self._load_policy_templates()
         
@@ -63,14 +59,10 @@ class PolicyChecker:
         self._cache = {}
         self._max_cache_size = 50
 
-    @trace_agent("policy_checker")
-    def check_compliance(self, architecture_analysis: Dict[str, Any], environment: str, trace_id: Optional[str] = None) -> Dict[str, Any]:
+    def check_compliance(self, architecture_analysis: Dict[str, Any], environment: str) -> Dict[str, Any]:
         """
         Check architecture compliance against Azure policies
         """
-        # Set trace context
-        if trace_id:
-            self.current_trace_id = trace_id
         
         # Check cache first
         cache_key = self._get_cache_key(architecture_analysis, environment)

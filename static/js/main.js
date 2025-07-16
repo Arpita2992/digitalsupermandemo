@@ -33,6 +33,14 @@ class DigitalSuperman {
             overallProgressBadge: document.getElementById('overallProgressBadge')
         };
 
+        // Check if required elements exist
+        const requiredElements = ['uploadArea', 'fileInput', 'uploadForm', 'fileInfo', 'uploadBtnContainer'];
+        for (const elementName of requiredElements) {
+            if (!this.elements[elementName]) {
+                console.error(`Required element not found: ${elementName}`);
+            }
+        }
+
         // Cache agent elements
         this.agentElements = {};
         for (let i = 1; i <= 4; i++) {
@@ -48,6 +56,12 @@ class DigitalSuperman {
         // Use event delegation for better performance
         const { uploadArea, fileInput, uploadForm, removeFileBtn } = this.elements;
 
+        // Check if elements exist before binding events
+        if (!uploadArea || !fileInput || !uploadForm) {
+            console.error('Required elements not found for event binding');
+            return;
+        }
+
         // File upload events
         uploadArea.addEventListener('click', () => fileInput.click());
         uploadArea.addEventListener('dragover', this.handleDragOver.bind(this));
@@ -61,11 +75,15 @@ class DigitalSuperman {
         uploadForm.addEventListener('submit', this.handleFormSubmit.bind(this));
         
         // Remove file
-        removeFileBtn.addEventListener('click', this.clearFileSelection.bind(this));
+        if (removeFileBtn) {
+            removeFileBtn.addEventListener('click', this.clearFileSelection.bind(this));
+        }
 
         // Custom alert events
         document.addEventListener('click', this.handleOverlayClick.bind(this));
         document.addEventListener('keydown', this.handleKeydown.bind(this));
+        
+        console.log('Digital Superman: Events bound successfully');
     }
 
     handleDragOver(e) {
@@ -95,11 +113,18 @@ class DigitalSuperman {
 
     handleFormSubmit(e) {
         e.preventDefault();
+        console.log('Form submit handler called');
         
-        if (this.isProcessing) return;
+        if (this.isProcessing) {
+            console.log('Already processing, ignoring submit');
+            return;
+        }
 
         const environment = document.getElementById('environment').value;
         const file = this.elements.fileInput.files[0];
+
+        console.log('Environment:', environment);
+        console.log('File:', file);
 
         if (!environment) {
             this.showCustomAlert('Environment Required', 'Please select an environment first.');
@@ -111,52 +136,8 @@ class DigitalSuperman {
             return;
         }
 
-        // Create trace immediately and display it
-        this.createTraceAndStartProcessing(file, environment);
-    }
-
-    async createTraceAndStartProcessing(file, environment) {
-        try {
-            // Call backend to create trace
-            const traceResponse = await fetch('/create-trace', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    environment: environment,
-                    file_name: file.name,
-                    file_size: file.size
-                })
-            });
-
-            if (!traceResponse.ok) {
-                throw new Error('Failed to create trace');
-            }
-
-            const traceData = await traceResponse.json();
-            const traceId = traceData.trace_id;
-
-            // Display trace ID immediately
-            this.displayTraceId(traceId);
-
-            // Start file upload with trace ID
-            this.handleFileUpload(file, environment, traceId);
-
-        } catch (error) {
-            console.error('Error creating trace:', error);
-            // Fallback to generating trace ID on frontend
-            const traceId = this.generateTraceId();
-            this.displayTraceId(traceId);
-            this.handleFileUpload(file, environment, traceId);
-        }
-    }
-
-    generateTraceId() {
-        // Generate a unique trace ID
-        const timestamp = Date.now().toString(36);
-        const randomStr = Math.random().toString(36).substr(2, 9);
-        return `trace_${timestamp}_${randomStr}`;
+        // Start file upload directly
+        this.handleFileUpload(file, environment);
     }
 
     showFileInfo(file) {
@@ -188,7 +169,7 @@ class DigitalSuperman {
         this.elements.uploadBtnContainer.style.display = 'none';
     }
 
-    async handleFileUpload(file, environment, traceId = null) {
+    async handleFileUpload(file, environment) {
         if (this.isProcessing) return;
         
         this.isProcessing = true;
@@ -204,11 +185,6 @@ class DigitalSuperman {
         const formData = new FormData();
         formData.append('file', file);
         formData.append('environment', environment);
-        
-        // Add trace ID if provided
-        if (traceId) {
-            formData.append('trace_id', traceId);
-        }
 
         try {
             // Start Agent 1
@@ -234,11 +210,6 @@ class DigitalSuperman {
             const data = await response.json();
 
             if (data.success) {
-                // If no trace ID was provided by frontend, display the one from backend
-                if (!traceId && data.trace_id) {
-                    this.displayTraceId(data.trace_id);
-                }
-                
                 this.showProgressMessage('Processing completed successfully!');
                 // Simulate realistic processing with optimized timing
                 await this.processAgents();
@@ -547,173 +518,6 @@ class DigitalSuperman {
         if (e.key === 'Escape' && this.currentAlert) {
             this.closeCustomAlert();
         }
-    }
-
-    displayTraceId(traceId) {
-        // Create trace ID display element
-        const traceDisplay = document.createElement('div');
-        traceDisplay.className = 'trace-id-display';
-        traceDisplay.innerHTML = `
-            <div class="trace-id-container">
-                <span class="trace-id-label">Trace ID:</span>
-                <span class="trace-id-value">${traceId}</span>
-                <button class="trace-id-copy" onclick="digitalSuperman.copyTraceId('${traceId}')">
-                    <i class="fas fa-copy"></i>
-                </button>
-            </div>
-        `;
-        
-        // Find the upload button container and add trace ID below it
-        const uploadContainer = document.getElementById('uploadBtnContainer');
-        if (uploadContainer) {
-            // Remove any existing trace display
-            const existingTrace = uploadContainer.querySelector('.trace-id-display');
-            if (existingTrace) {
-                existingTrace.remove();
-            }
-            
-            uploadContainer.appendChild(traceDisplay);
-            
-            // Add CSS styles dynamically if not already present
-            if (!document.getElementById('trace-id-styles')) {
-                const style = document.createElement('style');
-                style.id = 'trace-id-styles';
-                style.textContent = `
-                    .trace-id-display {
-                        margin-top: 1rem;
-                        padding: 0.75rem;
-                        background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
-                        border: 1px solid rgba(139, 92, 246, 0.2);
-                        border-radius: 0.5rem;
-                        text-align: center;
-                    }
-                    
-                    .trace-id-container {
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        gap: 0.5rem;
-                        font-family: 'Courier New', monospace;
-                        font-size: 0.85rem;
-                    }
-                    
-                    .trace-id-label {
-                        color: #6366f1;
-                        font-weight: 600;
-                    }
-                    
-                    .trace-id-value {
-                        color: #1e293b;
-                        font-weight: 500;
-                        background: rgba(255, 255, 255, 0.7);
-                        padding: 0.25rem 0.5rem;
-                        border-radius: 0.25rem;
-                        border: 1px solid rgba(139, 92, 246, 0.2);
-                    }
-                    
-                    .trace-id-copy {
-                        background: none;
-                        border: none;
-                        color: #6366f1;
-                        cursor: pointer;
-                        padding: 0.25rem;
-                        border-radius: 0.25rem;
-                        transition: all 0.2s ease;
-                    }
-                    
-                    .trace-id-copy:hover {
-                        background: rgba(139, 92, 246, 0.1);
-                        transform: translateY(-1px);
-                    }
-                `;
-                document.head.appendChild(style);
-            }
-        }
-    }
-
-    copyTraceId(traceId) {
-        if (navigator.clipboard) {
-            navigator.clipboard.writeText(traceId).then(() => {
-                this.showToast('Trace ID copied to clipboard!', 'success');
-            }).catch(() => {
-                this.fallbackCopyToClipboard(traceId);
-            });
-        } else {
-            this.fallbackCopyToClipboard(traceId);
-        }
-    }
-
-    fallbackCopyToClipboard(text) {
-        const textArea = document.createElement('textarea');
-        textArea.value = text;
-        textArea.style.position = 'fixed';
-        textArea.style.opacity = '0';
-        document.body.appendChild(textArea);
-        textArea.select();
-        
-        try {
-            document.execCommand('copy');
-            this.showToast('Trace ID copied to clipboard!', 'success');
-        } catch (err) {
-            this.showToast('Failed to copy trace ID', 'error');
-        }
-        
-        document.body.removeChild(textArea);
-    }
-
-    showToast(message, type = 'info') {
-        const toast = document.createElement('div');
-        toast.className = `toast toast-${type}`;
-        toast.textContent = message;
-        
-        // Add toast styles if not present
-        if (!document.getElementById('toast-styles')) {
-            const style = document.createElement('style');
-            style.id = 'toast-styles';
-            style.textContent = `
-                .toast {
-                    position: fixed;
-                    top: 20px;
-                    right: 20px;
-                    padding: 0.75rem 1.5rem;
-                    border-radius: 0.5rem;
-                    color: white;
-                    font-weight: 500;
-                    z-index: 10000;
-                    animation: slideInRight 0.3s ease-out;
-                }
-                
-                .toast-success {
-                    background: #10b981;
-                }
-                
-                .toast-error {
-                    background: #ef4444;
-                }
-                
-                .toast-info {
-                    background: #3b82f6;
-                }
-                
-                @keyframes slideInRight {
-                    from {
-                        transform: translateX(100%);
-                        opacity: 0;
-                    }
-                    to {
-                        transform: translateX(0);
-                        opacity: 1;
-                    }
-                }
-            `;
-            document.head.appendChild(style);
-        }
-        
-        document.body.appendChild(toast);
-        
-        setTimeout(() => {
-            toast.remove();
-        }, 3000);
     }
 }
 

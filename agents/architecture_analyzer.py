@@ -10,7 +10,6 @@ import openai
 import os
 from dotenv import load_dotenv
 import hashlib
-from utils.trace_decorator import trace_agent
 
 load_dotenv()
 
@@ -41,9 +40,6 @@ class ArchitectureAnalyzer:
         # Simple cache for repeated content
         self._cache = {}
         self._max_cache_size = 100  # Limit cache size
-        
-        # Current trace ID for tracking
-        self.current_trace_id = None
     
     def _get_cache_key(self, content):
         """Generate cache key from content"""
@@ -61,13 +57,10 @@ class ArchitectureAnalyzer:
             del self._cache[oldest_key]
         self._cache[cache_key] = result
 
-    @trace_agent("architecture_analyzer")
-    def analyze_architecture(self, extracted_content: Dict[str, Any], trace_id: str = None) -> Dict[str, Any]:
+    def analyze_architecture(self, extracted_content: Dict[str, Any]) -> Dict[str, Any]:
         """
         Analyze the extracted architecture diagram content
         """
-        # Set trace context
-        self.current_trace_id = trace_id
         
         # Handle both string and dictionary input
         if isinstance(extracted_content, str):
