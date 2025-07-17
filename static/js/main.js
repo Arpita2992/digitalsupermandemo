@@ -30,7 +30,10 @@ class DigitalSuperman {
             resultCard: document.getElementById('resultCard'),
             downloadLink: document.getElementById('downloadLink'),
             overallProgress: document.getElementById('overallProgress'),
-            overallProgressBadge: document.getElementById('overallProgressBadge')
+            overallProgressBadge: document.getElementById('overallProgressBadge'),
+            fastModeToggle: document.getElementById('fastMode'),
+            fastModeHelp: document.getElementById('fastModeHelp'),
+            fullModeHelp: document.getElementById('fullModeHelp')
         };
 
         // Check if required elements exist
@@ -54,7 +57,7 @@ class DigitalSuperman {
 
     bindEvents() {
         // Use event delegation for better performance
-        const { uploadArea, fileInput, uploadForm, removeFileBtn } = this.elements;
+        const { uploadArea, fileInput, uploadForm, removeFileBtn, fastModeToggle } = this.elements;
 
         // Check if elements exist before binding events
         if (!uploadArea || !fileInput || !uploadForm) {
@@ -77,6 +80,11 @@ class DigitalSuperman {
         // Remove file
         if (removeFileBtn) {
             removeFileBtn.addEventListener('click', this.clearFileSelection.bind(this));
+        }
+
+        // Fast mode toggle
+        if (fastModeToggle) {
+            fastModeToggle.addEventListener('change', this.handleFastModeToggle.bind(this));
         }
 
         // Custom alert events
@@ -140,6 +148,25 @@ class DigitalSuperman {
         this.handleFileUpload(file, environment);
     }
 
+    handleFastModeToggle(e) {
+        const isChecked = e.target.checked;
+        console.log('Fast mode toggle:', isChecked);
+        
+        // Update help text visibility
+        const fastModeHelp = document.getElementById('fastModeHelp');
+        const fullModeHelp = document.getElementById('fullModeHelp');
+        
+        if (fastModeHelp && fullModeHelp) {
+            if (isChecked) {
+                fastModeHelp.style.display = 'block';
+                fullModeHelp.style.display = 'none';
+            } else {
+                fastModeHelp.style.display = 'none';
+                fullModeHelp.style.display = 'block';
+            }
+        }
+    }
+
     showFileInfo(file) {
         this.selectedFile = file;
         
@@ -185,6 +212,13 @@ class DigitalSuperman {
         const formData = new FormData();
         formData.append('file', file);
         formData.append('environment', environment);
+        
+        // Add fast mode parameter
+        const fastModeToggle = this.elements.fastModeToggle;
+        if (fastModeToggle && fastModeToggle.checked) {
+            formData.append('fast_mode', 'true');
+            this.showProgressMessage('Fast mode: Quick analysis starting...');
+        }
 
         try {
             // Start Agent 1

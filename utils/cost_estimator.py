@@ -48,6 +48,36 @@ class AzureCostEstimator:
         'Azure Front Door': 'Microsoft.Network/frontDoors',
         'Application Gateway': 'Microsoft.Network/applicationGateways',
         'Virtual Network': 'Microsoft.Network/virtualNetworks',
+        
+        # Lowercase mappings (from architecture analysis)
+        'app service': 'Microsoft.Web/sites',
+        'web app': 'Microsoft.Web/sites',
+        'sql database': 'Microsoft.Sql/servers/databases',
+        'storage account': 'Microsoft.Storage/storageAccounts',
+        'key vault': 'Microsoft.KeyVault/vaults',
+        'application insights': 'Microsoft.Insights/components',
+        'log analytics workspace': 'Microsoft.OperationalInsights/workspaces',
+        'log analytics': 'Microsoft.OperationalInsights/workspaces',
+        'virtual machine': 'Microsoft.Compute/virtualMachines',
+        'database': 'Microsoft.Sql/servers/databases',
+        'cosmos db': 'Microsoft.DocumentDB/databaseAccounts',
+        'redis cache': 'Microsoft.Cache/redis',
+        'service bus': 'Microsoft.ServiceBus/namespaces',
+        'event hub': 'Microsoft.EventHub/namespaces',
+        'load balancer': 'Microsoft.Network/loadBalancers',
+        'public ip': 'Microsoft.Network/publicIPAddresses',
+        'network security group': 'Microsoft.Network/networkSecurityGroups',
+        'container registry': 'Microsoft.ContainerRegistry/registries',
+        'aks': 'Microsoft.ContainerService/managedClusters',
+        'functions': 'Microsoft.Web/sites',
+        'api management': 'Microsoft.ApiManagement/service',
+        'cdn': 'Microsoft.Cdn/profiles',
+        'traffic manager': 'Microsoft.Network/trafficManagerProfiles',
+        'monitor': 'Microsoft.Insights/components',
+        'backup': 'Microsoft.RecoveryServices/vaults',
+        'application gateway': 'Microsoft.Network/applicationGateways',
+        'virtual network': 'Microsoft.Network/virtualNetworks',
+        'front door': 'Microsoft.Network/frontDoors',
         'App Service': 'Microsoft.Web/sites',
         'SQL Database': 'Microsoft.Sql/servers/databases',
         'Storage Account': 'Microsoft.Storage/storageAccounts',
@@ -285,13 +315,30 @@ class AzureCostEstimator:
             # Debug: Show what resources we're processing
             for i, resource in enumerate(all_resources):
                 raw_type = resource.get('type', 'Unknown')
-                mapped_type = self.RESOURCE_TYPE_MAPPING.get(raw_type, raw_type)
-                print(f"   {i+1}. {resource.get('name', 'Unknown')} - Type: {raw_type} -> {mapped_type}")
+                
+                # Try exact match first, then case-insensitive match
+                mapped_type = self.RESOURCE_TYPE_MAPPING.get(raw_type, None)
+                if mapped_type is None:
+                    # Try case-insensitive match
+                    raw_type_lower = raw_type.lower()
+                    mapped_type = self.RESOURCE_TYPE_MAPPING.get(raw_type_lower, raw_type)
+                
+                print(f"   {i+1}. {resource.get('name', 'Unknown')} - Type: '{raw_type}' -> '{mapped_type}'")
+                if mapped_type != raw_type:
+                    print(f"      ✅ Mapped successfully!")
+                else:
+                    print(f"      ❌ No mapping found for '{raw_type}'")
             
             for resource in all_resources:
                 # Map generic resource types to Azure resource types
                 raw_type = resource.get('type', 'Unknown')
-                mapped_type = self.RESOURCE_TYPE_MAPPING.get(raw_type, raw_type)
+                
+                # Try exact match first, then case-insensitive match
+                mapped_type = self.RESOURCE_TYPE_MAPPING.get(raw_type, None)
+                if mapped_type is None:
+                    # Try case-insensitive match
+                    raw_type_lower = raw_type.lower()
+                    mapped_type = self.RESOURCE_TYPE_MAPPING.get(raw_type_lower, raw_type)
                 
                 # Create a copy of the resource with the mapped type
                 resource_copy = resource.copy()

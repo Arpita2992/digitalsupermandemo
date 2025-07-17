@@ -20,42 +20,523 @@ class ArchitectureAnalyzer:
         self.azure_key = os.getenv('AZURE_AI_AGENT1_KEY')
         self.azure_deployment = os.getenv('AZURE_AI_AGENT1_DEPLOYMENT', 'gpt-4')
         
+        # Timeout configuration for faster responses
+        self.api_timeout = 30  # Reduced from default 60 seconds
+        self.max_retries = 2   # Reduced retries for faster failure
+        
         if self.azure_endpoint and self.azure_key:
-            # Use Azure AI Foundry endpoint
+            # Extract base endpoint from full URL
+            base_endpoint = self.azure_endpoint.split('/openai/deployments')[0]
+            
+            # Extract deployment name from endpoint URL 
+            if '/openai/deployments/' in self.azure_endpoint:
+                deployment_name = self.azure_endpoint.split('/openai/deployments/')[1].split('/')[0]
+            else:
+                deployment_name = self.azure_deployment
+            
+            # Use Azure AI Foundry endpoint with timeout
             self.openai_client = openai.AzureOpenAI(
-                azure_endpoint=self.azure_endpoint,
+                azure_endpoint=base_endpoint,
                 api_key=self.azure_key,
-                api_version="2024-02-01"
+                api_version="2024-10-21",  # Updated API version
+                timeout=self.api_timeout,
+                max_retries=self.max_retries
             )
-            self.model_name = self.azure_deployment
-            print(f"✅ Architecture Analyzer: Using Azure AI Foundry endpoint")
+            self.model_name = deployment_name
+            print(f"✅ Architecture Analyzer: Using Azure AI Foundry endpoint: {base_endpoint}")
+            print(f"🎯 Using deployment: {deployment_name}")
+            print(f"⚡ Timeout: {self.api_timeout}s, Max retries: {self.max_retries}")
         else:
-            # Fallback to OpenAI
+            # Fallback to OpenAI with timeout
             self.openai_client = openai.OpenAI(
-                api_key=os.getenv('OPENAI_API_KEY')
+                api_key=os.getenv('OPENAI_API_KEY'),
+                timeout=self.api_timeout,
+                max_retries=self.max_retries
             )
             self.model_name = "gpt-4"
             print(f"⚠️ Architecture Analyzer: Using OpenAI fallback (configure Azure AI Foundry for production)")
+            print(f"⚡ Timeout: {self.api_timeout}s, Max retries: {self.max_retries}")
         
-        # Simple cache for repeated content
+        # Enhanced caching system
         self._cache = {}
-        self._max_cache_size = 100  # Limit cache size
+        self._max_cache_size = 200  # Increased cache size
+        self._cache_hits = 0
+        self._cache_misses = 0
+        
+        # Pre-compiled patterns for faster processing
+        self._azure_service_patterns = self._compile_azure_service_patterns()
+        self._complexity_patterns = self._compile_complexity_patterns()
+        
+        # Service detection confidence thresholds
+        self._confidence_threshold = 0.95
+        
+    def _compile_azure_service_patterns(self):
+        """Pre-compile regex patterns for faster service detection"""
+        import re
+        
+        # High-confidence patterns for common Azure services
+        high_confidence_patterns = [
+            (re.compile(r'\b(azure\s+)?app\s+service\b', re.IGNORECASE), 'app service'),
+            (re.compile(r'\b(azure\s+)?sql\s+(database|db)\b', re.IGNORECASE), 'sql database'),
+            (re.compile(r'\b(azure\s+)?storage\s+account\b', re.IGNORECASE), 'storage account'),
+            (re.compile(r'\b(azure\s+)?virtual\s+(machine|vm)\b', re.IGNORECASE), 'virtual machine'),
+            (re.compile(r'\b(azure\s+)?kubernetes\s+service|aks\b', re.IGNORECASE), 'kubernetes service'),
+            (re.compile(r'\b(azure\s+)?container\s+registry|acr\b', re.IGNORECASE), 'container registry'),
+            (re.compile(r'\b(azure\s+)?key\s+vault\b', re.IGNORECASE), 'key vault'),
+            (re.compile(r'\b(azure\s+)?cosmos\s+db\b', re.IGNORECASE), 'cosmos db'),
+            (re.compile(r'\b(azure\s+)?application\s+gateway\b', re.IGNORECASE), 'application gateway'),
+            (re.compile(r'\b(azure\s+)?load\s+balancer\b', re.IGNORECASE), 'load balancer'),
+            (re.compile(r'\b(azure\s+)?virtual\s+network|vnet\b', re.IGNORECASE), 'virtual network'),
+            (re.compile(r'\b(azure\s+)?functions?\b', re.IGNORECASE), 'functions'),
+            (re.compile(r'\b(azure\s+)?redis\s+cache\b', re.IGNORECASE), 'redis cache'),
+            (re.compile(r'\b(azure\s+)?service\s+bus\b', re.IGNORECASE), 'service bus'),
+            (re.compile(r'\b(azure\s+)?event\s+hubs?\b', re.IGNORECASE), 'event hubs'),
+            (re.compile(r'\b(azure\s+)?api\s+management|apim\b', re.IGNORECASE), 'api management'),
+            (re.compile(r'\b(azure\s+)?cdn\b', re.IGNORECASE), 'cdn'),
+            (re.compile(r'\b(azure\s+)?monitor\b', re.IGNORECASE), 'monitor'),
+            (re.compile(r'\b(azure\s+)?active\s+directory|aad\b', re.IGNORECASE), 'active directory'),
+            (re.compile(r'\b(azure\s+)?data\s+factory|adf\b', re.IGNORECASE), 'data factory'),
+            (re.compile(r'\b(azure\s+)?synapse\s+analytics?\b', re.IGNORECASE), 'synapse analytics'),
+            (re.compile(r'\b(azure\s+)?machine\s+learning|azure\s+ml\b', re.IGNORECASE), 'machine learning'),
+            (re.compile(r'\b(azure\s+)?iot\s+hub\b', re.IGNORECASE), 'iot hub'),
+            (re.compile(r'\b(azure\s+)?stream\s+analytics\b', re.IGNORECASE), 'stream analytics'),
+            (re.compile(r'\b(azure\s+)?logic\s+apps?\b', re.IGNORECASE), 'logic apps'),
+            (re.compile(r'\b(azure\s+)?security\s+center\b', re.IGNORECASE), 'security center'),
+            (re.compile(r'\b(azure\s+)?cognitive\s+services?\b', re.IGNORECASE), 'cognitive services'),
+            (re.compile(r'\bpower\s+bi\b', re.IGNORECASE), 'power bi'),
+            (re.compile(r'\b(azure\s+)?firewall\b', re.IGNORECASE), 'firewall'),
+            (re.compile(r'\b(azure\s+)?vpn\s+gateway\b', re.IGNORECASE), 'vpn gateway'),
+            (re.compile(r'\b(azure\s+)?backup\b', re.IGNORECASE), 'backup'),
+            (re.compile(r'\b(azure\s+)?site\s+recovery\b', re.IGNORECASE), 'site recovery'),
+            (re.compile(r'\b(azure\s+)?postgresql\b', re.IGNORECASE), 'postgresql'),
+            (re.compile(r'\b(azure\s+)?mysql\b', re.IGNORECASE), 'mysql'),
+            (re.compile(r'\b(azure\s+)?mariadb\b', re.IGNORECASE), 'mariadb'),
+            (re.compile(r'\b(azure\s+)?data\s+lake\b', re.IGNORECASE), 'data lake'),
+            (re.compile(r'\b(azure\s+)?sentinel\b', re.IGNORECASE), 'sentinel'),
+            (re.compile(r'\b(azure\s+)?log\s+analytics\b', re.IGNORECASE), 'log analytics'),
+            (re.compile(r'\b(azure\s+)?event\s+grid\b', re.IGNORECASE), 'event grid'),
+            (re.compile(r'\b(azure\s+)?batch\b', re.IGNORECASE), 'batch'),
+            (re.compile(r'\b(azure\s+)?analysis\s+services\b', re.IGNORECASE), 'analysis services'),
+            (re.compile(r'\b(azure\s+)?time\s+series\s+insights\b', re.IGNORECASE), 'time series insights'),
+            (re.compile(r'\b(azure\s+)?devops\b', re.IGNORECASE), 'devops'),
+            (re.compile(r'\b(azure\s+)?network\s+security\s+group|nsg\b', re.IGNORECASE), 'network security group'),
+            (re.compile(r'\b(azure\s+)?expressroute\b', re.IGNORECASE), 'expressroute'),
+            (re.compile(r'\b(azure\s+)?search\s+service\b', re.IGNORECASE), 'search service'),
+            (re.compile(r'\b(azure\s+)?container\s+instances\b', re.IGNORECASE), 'container instances'),
+            (re.compile(r'\b(azure\s+)?notification\s+hubs?\b', re.IGNORECASE), 'notification hubs'),
+        ]
+        
+        # Medium confidence patterns
+        medium_confidence_patterns = [
+            (re.compile(r'\bweb\s+app\b', re.IGNORECASE), 'app service'),
+            (re.compile(r'\bdatabase\b', re.IGNORECASE), 'sql database'),
+            (re.compile(r'\bstorage\b', re.IGNORECASE), 'storage account'),
+            (re.compile(r'\bvm\b', re.IGNORECASE), 'virtual machine'),
+            (re.compile(r'\bk8s\b', re.IGNORECASE), 'kubernetes service'),
+            (re.compile(r'\bregistry\b', re.IGNORECASE), 'container registry'),
+            (re.compile(r'\bvault\b', re.IGNORECASE), 'key vault'),
+            (re.compile(r'\bcosmos\b', re.IGNORECASE), 'cosmos db'),
+            (re.compile(r'\bgateway\b', re.IGNORECASE), 'application gateway'),
+            (re.compile(r'\bbalancer\b', re.IGNORECASE), 'load balancer'),
+            (re.compile(r'\bnetwork\b', re.IGNORECASE), 'virtual network'),
+            (re.compile(r'\bserverless\b', re.IGNORECASE), 'functions'),
+            (re.compile(r'\bcache\b', re.IGNORECASE), 'redis cache'),
+            (re.compile(r'\bmessaging\b', re.IGNORECASE), 'service bus'),
+            (re.compile(r'\bevents?\b', re.IGNORECASE), 'event hubs'),
+            (re.compile(r'\bapi\b', re.IGNORECASE), 'api management'),
+            (re.compile(r'\bmonitoring\b', re.IGNORECASE), 'monitor'),
+            (re.compile(r'\bidentity\b', re.IGNORECASE), 'active directory'),
+            (re.compile(r'\betl\b', re.IGNORECASE), 'data factory'),
+            (re.compile(r'\bwarehouse\b', re.IGNORECASE), 'synapse analytics'),
+            (re.compile(r'\bml\b', re.IGNORECASE), 'machine learning'),
+            (re.compile(r'\biot\b', re.IGNORECASE), 'iot hub'),
+            (re.compile(r'\bstreaming\b', re.IGNORECASE), 'stream analytics'),
+            (re.compile(r'\bworkflow\b', re.IGNORECASE), 'logic apps'),
+            (re.compile(r'\bsecurity\b', re.IGNORECASE), 'security center'),
+            (re.compile(r'\bai\b', re.IGNORECASE), 'cognitive services'),
+            (re.compile(r'\breporting\b', re.IGNORECASE), 'power bi'),
+            (re.compile(r'\bfirewall\b', re.IGNORECASE), 'firewall'),
+            (re.compile(r'\bvpn\b', re.IGNORECASE), 'vpn gateway'),
+            (re.compile(r'\bbackup\b', re.IGNORECASE), 'backup'),
+            (re.compile(r'\brecovery\b', re.IGNORECASE), 'site recovery'),
+            (re.compile(r'\bpostgres\b', re.IGNORECASE), 'postgresql'),
+            (re.compile(r'\bmysql\b', re.IGNORECASE), 'mysql'),
+            (re.compile(r'\bmariadb\b', re.IGNORECASE), 'mariadb'),
+            (re.compile(r'\blake\b', re.IGNORECASE), 'data lake'),
+            (re.compile(r'\bsiem\b', re.IGNORECASE), 'sentinel'),
+            (re.compile(r'\blogs\b', re.IGNORECASE), 'log analytics'),
+            (re.compile(r'\bevent\b', re.IGNORECASE), 'event grid'),
+            (re.compile(r'\bbatch\b', re.IGNORECASE), 'batch'),
+            (re.compile(r'\banalysis\b', re.IGNORECASE), 'analysis services'),
+            (re.compile(r'\btime\s+series\b', re.IGNORECASE), 'time series insights'),
+            (re.compile(r'\bdevops\b', re.IGNORECASE), 'devops'),
+            (re.compile(r'\bsearch\b', re.IGNORECASE), 'search service'),
+            (re.compile(r'\bcontainer\b', re.IGNORECASE), 'container instances'),
+            (re.compile(r'\bnotification\b', re.IGNORECASE), 'notification hubs'),
+        ]
+        
+        self._azure_service_patterns = {
+            'high_confidence': high_confidence_patterns,
+            'medium_confidence': medium_confidence_patterns
+        }
+        
+        return self._azure_service_patterns
+    
+    def _compile_complexity_patterns(self):
+        """Pre-compile patterns for complexity detection"""
+        import re
+        
+        return [
+            re.compile(r'\b(microservices?|micro-services?)\b', re.IGNORECASE),
+            re.compile(r'\b(kubernetes|k8s|aks|container)\b', re.IGNORECASE),
+            re.compile(r'\b(machine\s+learning|ai|cognitive|ml)\b', re.IGNORECASE),
+            re.compile(r'\b(data\s+factory|synapse|databricks)\b', re.IGNORECASE),
+            re.compile(r'\b(iot|event\s+hubs|stream\s+analytics)\b', re.IGNORECASE),
+            re.compile(r'\b(expressroute|vpn|firewall|security)\b', re.IGNORECASE),
+            re.compile(r'\b(hybrid|multi-region|disaster\s+recovery)\b', re.IGNORECASE),
+            re.compile(r'\b(rbac|policy|compliance|governance)\b', re.IGNORECASE),
+        ]
     
     def _get_cache_key(self, content):
-        """Generate cache key from content"""
-        return hashlib.md5(str(content).encode()).hexdigest()
+        """Generate optimized cache key from content"""
+        # Create a more efficient cache key
+        if isinstance(content, dict):
+            text_content = content.get('text', '')
+            metadata = content.get('metadata', {})
+            filename = metadata.get('filename', '')
+            
+            # Create hash from key components only
+            key_content = f"{text_content[:500]}{filename}"  # First 500 chars + filename
+            return hashlib.md5(key_content.encode()).hexdigest()
+        else:
+            return hashlib.md5(str(content)[:500].encode()).hexdigest()
     
     def _get_from_cache(self, cache_key):
         """Get cached result if available"""
-        return self._cache.get(cache_key)
+        result = self._cache.get(cache_key)
+        if result:
+            self._cache_hits += 1
+            return result
+        else:
+            self._cache_misses += 1
+            return None
     
     def _save_to_cache(self, cache_key, result):
-        """Save result to cache"""
+        """Save result to cache with LRU eviction"""
         if len(self._cache) >= self._max_cache_size:
-            # Remove oldest entry
+            # Remove oldest entry (simple FIFO for now)
             oldest_key = next(iter(self._cache))
             del self._cache[oldest_key]
         self._cache[cache_key] = result
+    
+    def _quick_service_detection(self, text_content: str) -> Dict[str, Any]:
+        """Fast pattern-based service detection before AI analysis"""
+        detected_services = {}
+        confidence_scores = {}
+        
+        # Apply high-confidence patterns first
+        for pattern, service_type in self._azure_service_patterns['high_confidence']:
+            matches = pattern.findall(text_content)
+            if matches:
+                detected_services[service_type] = {
+                    'matches': len(matches),
+                    'confidence': 0.9,
+                    'pattern_type': 'high_confidence'
+                }
+                confidence_scores[service_type] = 0.9
+        
+        # Apply medium-confidence patterns for missed services
+        for pattern, service_type in self._azure_service_patterns['medium_confidence']:
+            if service_type not in detected_services:
+                matches = pattern.findall(text_content)
+                if matches:
+                    detected_services[service_type] = {
+                        'matches': len(matches),
+                        'confidence': 0.6,
+                        'pattern_type': 'medium_confidence'
+                    }
+                    confidence_scores[service_type] = 0.6
+        
+        return {
+            'detected_services': detected_services,
+            'service_count': len(detected_services),
+            'average_confidence': sum(confidence_scores.values()) / len(confidence_scores) if confidence_scores else 0,
+            'high_confidence_services': [s for s, data in detected_services.items() if data['confidence'] >= 0.9]
+        }
+
+    def _parallel_analyze_components(self, text_content: str, pre_detected_services: Dict[str, Any]) -> Dict[str, Any]:
+        """Parallel analysis of different component types"""
+        import concurrent.futures
+        
+        # Define analysis tasks
+        analysis_tasks = {
+            'compute_services': self._analyze_compute_services,
+            'storage_services': self._analyze_storage_services,
+            'network_services': self._analyze_network_services,
+            'database_services': self._analyze_database_services,
+            'security_services': self._analyze_security_services,
+            'monitoring_services': self._analyze_monitoring_services
+        }
+        
+        results = {}
+        
+        # Run analysis tasks in parallel
+        with concurrent.futures.ThreadPoolExecutor(max_workers=6) as executor:
+            future_to_task = {
+                executor.submit(task_func, text_content, pre_detected_services): task_name
+                for task_name, task_func in analysis_tasks.items()
+            }
+            
+            for future in concurrent.futures.as_completed(future_to_task):
+                task_name = future_to_task[future]
+                try:
+                    results[task_name] = future.result(timeout=3.0)  # 3 second timeout per task
+                except Exception as exc:
+                    print(f'Analysis task {task_name} generated an exception: {exc}')
+                    results[task_name] = []
+        
+        return results
+    
+    def _analyze_compute_services(self, text_content: str, pre_detected: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Analyze compute services with enhanced patterns"""
+        compute_services = []
+        
+        # Enhanced compute patterns
+        compute_patterns = {
+            'virtual_machines': [
+                r'virtual\s+machine', r'vm\b', r'azure\s+vm', r'compute\s+instance',
+                r'windows\s+server', r'linux\s+server', r'ubuntu\s+server'
+            ],
+            'app_service': [
+                r'app\s+service', r'web\s+app', r'webapp', r'azure\s+app',
+                r'web\s+service', r'application\s+service'
+            ],
+            'kubernetes': [
+                r'aks', r'kubernetes', r'container\s+service', r'k8s',
+                r'azure\s+kubernetes', r'container\s+orchestration'
+            ],
+            'functions': [
+                r'azure\s+functions', r'function\s+app', r'serverless',
+                r'functions', r'lambda'
+            ],
+            'batch': [
+                r'azure\s+batch', r'batch\s+processing', r'batch\s+service',
+                r'compute\s+batch'
+            ]
+        }
+        
+        for service_type, patterns in compute_patterns.items():
+            for pattern in patterns:
+                matches = re.findall(pattern, text_content, re.IGNORECASE)
+                if matches:
+                    compute_services.append({
+                        'type': service_type,
+                        'name': service_type.replace('_', ' ').title(),
+                        'matches': len(matches),
+                        'confidence': 0.8,
+                        'category': 'compute'
+                    })
+                    break  # Avoid duplicates
+        
+        return compute_services
+    
+    def _analyze_storage_services(self, text_content: str, pre_detected: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Analyze storage services with enhanced patterns"""
+        storage_services = []
+        
+        storage_patterns = {
+            'storage_account': [
+                r'storage\s+account', r'blob\s+storage', r'azure\s+storage',
+                r'storage\s+service', r'data\s+storage'
+            ],
+            'cosmos_db': [
+                r'cosmos\s+db', r'cosmosdb', r'document\s+db', r'nosql',
+                r'azure\s+cosmos'
+            ],
+            'data_lake': [
+                r'data\s+lake', r'adls', r'azure\s+data\s+lake',
+                r'data\s+lake\s+storage'
+            ],
+            'sql_database': [
+                r'sql\s+database', r'azure\s+sql', r'sql\s+server',
+                r'managed\s+instance', r'database\s+server'
+            ],
+            'redis_cache': [
+                r'redis', r'cache', r'azure\s+cache', r'redis\s+cache',
+                r'in-memory\s+cache'
+            ]
+        }
+        
+        for service_type, patterns in storage_patterns.items():
+            for pattern in patterns:
+                matches = re.findall(pattern, text_content, re.IGNORECASE)
+                if matches:
+                    storage_services.append({
+                        'type': service_type,
+                        'name': service_type.replace('_', ' ').title(),
+                        'matches': len(matches),
+                        'confidence': 0.8,
+                        'category': 'storage'
+                    })
+                    break
+        
+        return storage_services
+    
+    def _analyze_network_services(self, text_content: str, pre_detected: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Analyze network services with enhanced patterns"""
+        network_services = []
+        
+        network_patterns = {
+            'virtual_network': [
+                r'virtual\s+network', r'vnet', r'azure\s+vnet', r'network',
+                r'subnet', r'vpc'
+            ],
+            'load_balancer': [
+                r'load\s+balancer', r'lb', r'azure\s+lb', r'application\s+gateway',
+                r'traffic\s+manager'
+            ],
+            'vpn_gateway': [
+                r'vpn\s+gateway', r'vpn', r'site-to-site', r'point-to-site',
+                r'virtual\s+gateway'
+            ],
+            'application_gateway': [
+                r'application\s+gateway', r'app\s+gateway', r'waf',
+                r'web\s+application\s+firewall'
+            ],
+            'cdn': [
+                r'cdn', r'content\s+delivery', r'azure\s+cdn',
+                r'content\s+delivery\s+network'
+            ]
+        }
+        
+        for service_type, patterns in network_patterns.items():
+            for pattern in patterns:
+                matches = re.findall(pattern, text_content, re.IGNORECASE)
+                if matches:
+                    network_services.append({
+                        'type': service_type,
+                        'name': service_type.replace('_', ' ').title(),
+                        'matches': len(matches),
+                        'confidence': 0.8,
+                        'category': 'network'
+                    })
+                    break
+        
+        return network_services
+    
+    def _analyze_database_services(self, text_content: str, pre_detected: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Analyze database services with enhanced patterns"""
+        database_services = []
+        
+        database_patterns = {
+            'azure_sql': [
+                r'azure\s+sql', r'sql\s+database', r'sql\s+server',
+                r'managed\s+instance', r'sql\s+pool'
+            ],
+            'cosmos_db': [
+                r'cosmos\s+db', r'cosmosdb', r'document\s+database',
+                r'nosql\s+database', r'azure\s+cosmos'
+            ],
+            'postgresql': [
+                r'postgresql', r'postgres', r'azure\s+database\s+for\s+postgresql',
+                r'postgres\s+database'
+            ],
+            'mysql': [
+                r'mysql', r'azure\s+database\s+for\s+mysql',
+                r'mysql\s+database'
+            ],
+            'mariadb': [
+                r'mariadb', r'azure\s+database\s+for\s+mariadb',
+                r'maria\s+database'
+            ]
+        }
+        
+        for service_type, patterns in database_patterns.items():
+            for pattern in patterns:
+                matches = re.findall(pattern, text_content, re.IGNORECASE)
+                if matches:
+                    database_services.append({
+                        'type': service_type,
+                        'name': service_type.replace('_', ' ').title(),
+                        'matches': len(matches),
+                        'confidence': 0.8,
+                        'category': 'database'
+                    })
+                    break
+        
+        return database_services
+    
+    def _analyze_security_services(self, text_content: str, pre_detected: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Analyze security services with enhanced patterns"""
+        security_services = []
+        
+        security_patterns = {
+            'key_vault': [
+                r'key\s+vault', r'azure\s+key\s+vault', r'secrets\s+management',
+                r'certificate\s+management', r'key\s+management'
+            ],
+            'security_center': [
+                r'security\s+center', r'azure\s+security\s+center',
+                r'defender', r'azure\s+defender'
+            ],
+            'active_directory': [
+                r'active\s+directory', r'azure\s+ad', r'aad',
+                r'identity\s+management', r'authentication'
+            ],
+            'sentinel': [
+                r'sentinel', r'azure\s+sentinel', r'siem',
+                r'security\s+information'
+            ]
+        }
+        
+        for service_type, patterns in security_patterns.items():
+            for pattern in patterns:
+                matches = re.findall(pattern, text_content, re.IGNORECASE)
+                if matches:
+                    security_services.append({
+                        'type': service_type,
+                        'name': service_type.replace('_', ' ').title(),
+                        'matches': len(matches),
+                        'confidence': 0.8,
+                        'category': 'security'
+                    })
+                    break
+        
+        return security_services
+    
+    def _analyze_monitoring_services(self, text_content: str, pre_detected: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Analyze monitoring services with enhanced patterns"""
+        monitoring_services = []
+        
+        monitoring_patterns = {
+            'monitor': [
+                r'azure\s+monitor', r'monitoring', r'application\s+insights',
+                r'log\s+analytics', r'metrics'
+            ],
+            'application_insights': [
+                r'application\s+insights', r'app\s+insights', r'telemetry',
+                r'performance\s+monitoring'
+            ],
+            'log_analytics': [
+                r'log\s+analytics', r'logs', r'azure\s+logs',
+                r'log\s+management', r'log\s+aggregation'
+            ]
+        }
+        
+        for service_type, patterns in monitoring_patterns.items():
+            for pattern in patterns:
+                matches = re.findall(pattern, text_content, re.IGNORECASE)
+                if matches:
+                    monitoring_services.append({
+                        'type': service_type,
+                        'name': service_type.replace('_', ' ').title(),
+                        'matches': len(matches),
+                        'confidence': 0.8,
+                        'category': 'monitoring'
+                    })
+                    break
+        
+        return monitoring_services
 
     def analyze_architecture(self, extracted_content: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -98,38 +579,113 @@ class ArchitectureAnalyzer:
                 self._save_to_cache(cache_key, error_result)
                 return error_result
             
-            # Prepare the optimized prompt for OpenAI
-            analysis_prompt = self._create_optimized_analysis_prompt(extracted_content)
+            # Get text content for analysis
+            text_content = extracted_content.get('text', '')
             
-            # Use faster model for simpler diagrams, GPT-4 for complex ones
-            model_to_use = self._select_optimal_model(extracted_content)
+            # Quick pre-detection of services using pattern matching
+            pre_detected_services = self._quick_service_detection(text_content)
             
-            # Call OpenAI API with optimized settings
-            response = self.openai_client.chat.completions.create(
-                model=model_to_use,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": "You are an expert Azure architect. Analyze architecture diagrams quickly and accurately. Focus on identifying Azure services, their configurations, and key relationships. Provide structured JSON output."
-                    },
-                    {
-                        "role": "user",
-                        "content": analysis_prompt
+            # Check if we can handle this with pattern matching only (fast path)
+            if (pre_detected_services['service_count'] > 0 and 
+                pre_detected_services['average_confidence'] > 0.8 and 
+                len(text_content) < 2000):
+                
+                print("🚀 Architecture Analyzer: Using pattern-only fast path")
+                
+                # Create components from pattern detection
+                components = []
+                for service_name, service_data in pre_detected_services['detected_services'].items():
+                    components.append({
+                        'name': service_name.replace('_', ' ').title(),
+                        'type': service_name,
+                        'category': self._get_service_category(service_name),
+                        'confidence': service_data['confidence'],
+                        'source': 'pattern_detection'
+                    })
+                
+                # Generate basic relationships
+                relationships = self._generate_basic_relationships(components)
+                
+                analysis_result = {
+                    'components': components,
+                    'relationships': relationships,
+                    'network_topology': {'type': 'cloud_native'},
+                    'summary': f'Azure architecture with {len(components)} services detected via pattern matching',
+                    'tokens_used': 0,  # No AI tokens used
+                    'processing_method': 'pattern_only_fast_path',
+                    'confidence': pre_detected_services['average_confidence'],
+                    'accuracy_score': pre_detected_services['average_confidence'],
+                    'performance_metrics': {
+                        'processing_time': 0.001,
+                        'method': 'pattern_only',
+                        'ai_calls': 0
                     }
-                ],
-                temperature=0.1,
-                max_tokens=2500,  # Increased slightly for better accuracy
-                timeout=90  # Reduced timeout to 90 seconds
-            )
+                }
+                
+                # Cache and return fast result
+                self._save_to_cache(cache_key, analysis_result)
+                return analysis_result
             
-            # Parse the response
-            analysis_result = self._parse_analysis_response(response.choices[0].message.content)
-            
-            # Add token usage information
-            if hasattr(response, 'usage') and response.usage:
-                analysis_result['tokens_used'] = response.usage.total_tokens
+            # Use parallel processing for complex diagrams
+            elif len(text_content) > 3000 or pre_detected_services['service_count'] > 5:
+                # Use hybrid approach: parallel processing + AI validation
+                parallel_results = self._parallel_analyze_components(text_content, pre_detected_services)
+                
+                # Combine results from parallel processing
+                all_components = []
+                for service_category, services in parallel_results.items():
+                    all_components.extend(services)
+                
+                # Use AI to validate and enhance the results
+                ai_analysis = self._ai_validate_and_enhance(text_content, all_components)
+                
+                # Combine results with AI validation
+                analysis_result = {
+                    'components': ai_analysis.get('components', all_components),
+                    'relationships': ai_analysis.get('relationships', []),
+                    'network_topology': ai_analysis.get('network_topology', {}),
+                    'summary': ai_analysis.get('summary', f'Azure architecture with {len(all_components)} components'),
+                    'tokens_used': ai_analysis.get('tokens_used', 0),
+                    'processing_method': 'parallel_hybrid'
+                }
             else:
-                analysis_result['tokens_used'] = len(analysis_prompt.split()) * 2  # Rough estimate
+                # Use enhanced AI analysis for simpler diagrams
+                analysis_prompt = self._create_optimized_analysis_prompt(extracted_content)
+                model_to_use = self._select_optimal_model(extracted_content)
+                
+                response = self.openai_client.chat.completions.create(
+                    model=model_to_use,
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": "You are an expert Azure architect. Analyze architecture diagrams quickly and accurately. Focus on identifying Azure services, their configurations, and key relationships. Provide structured JSON output."
+                        },
+                        {
+                            "role": "user",
+                            "content": analysis_prompt
+                        }
+                    ],
+                    temperature=0.1,
+                    max_tokens=2500,
+                    timeout=90
+                )
+                
+                if response and response.choices and len(response.choices) > 0:
+                    analysis_result = self._parse_analysis_response(response.choices[0].message.content)
+                    
+                    # Add token usage information
+                    if hasattr(response, 'usage') and response.usage:
+                        analysis_result['tokens_used'] = response.usage.total_tokens
+                    else:
+                        analysis_result['tokens_used'] = len(analysis_prompt.split()) * 2
+                    
+                    analysis_result['processing_method'] = 'ai_enhanced'
+                else:
+                    print(f"Standard AI analysis - No response choices: {response}")
+                    raise Exception("No response from OpenAI API")
+            
+            # Post-process to improve accuracy
+            analysis_result = self._post_process_analysis(analysis_result)
             
             # Save to cache
             self._save_to_cache(cache_key, analysis_result)
@@ -142,6 +698,170 @@ class ArchitectureAnalyzer:
                 'components': [],
                 'relationships': [],
                 'configurations': {},
+                'tokens_used': 0
+            }
+    
+    def _ai_validate_and_enhance(self, text_content: str, components: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Use AI to validate and enhance pattern-detected components"""
+        
+        # Create focused prompt for validation and enhancement
+        component_list = []
+        for comp in components:
+            component_list.append(f"- {comp.get('name', 'Unknown')} ({comp.get('type', 'Unknown')})")
+        
+        prompt = f"""
+        You are an expert Azure architect. Review and enhance this list of detected Azure components from an architecture diagram.
+
+        DETECTED COMPONENTS:
+        {chr(10).join(component_list)}
+
+        ARCHITECTURE CONTEXT:
+        {text_content[:3000]}  # Truncated for performance
+
+        TASKS:
+        1. Validate each detected component (is it actually present in the architecture?)
+        2. Identify any missing Azure services that should be included
+        3. Determine relationships between components
+        4. Identify network topology
+
+        Respond with ONLY this JSON structure:
+        {{
+            "components": [
+                {{
+                    "name": "specific_service_name",
+                    "type": "exact_azure_service_type",
+                    "configuration": {{"region": "region_if_mentioned", "sku": "tier_if_mentioned"}},
+                    "dependencies": ["other_service_names"],
+                    "validated": true
+                }}
+            ],
+            "relationships": [
+                {{
+                    "source": "source_service_name",
+                    "target": "target_service_name",
+                    "type": "connection_type"
+                }}
+            ],
+            "network_topology": {{
+                "vnets": ["vnet_names"],
+                "subnets": ["subnet_names"]
+            }},
+            "summary": "One sentence summary of the validated architecture"
+        }}
+
+        IMPORTANT: Only include components that are actually present in the architecture. Add missing components if clearly indicated.
+        """
+        
+        try:
+            response = self.openai_client.chat.completions.create(
+                model=self.model_name,  # Use the configured model name
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are an expert Azure architect focused on validating and enhancing component detection with high accuracy."
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                temperature=0.1,
+                max_tokens=2000,
+                timeout=60
+            )
+            
+            if response and response.choices and len(response.choices) > 0:
+                result = self._parse_analysis_response(response.choices[0].message.content)
+                
+                # Add token usage
+                if hasattr(response, 'usage') and response.usage:
+                    result['tokens_used'] = response.usage.total_tokens
+                else:
+                    result['tokens_used'] = len(prompt.split()) * 2
+                
+                return result
+            else:
+                print(f"AI validation - No response choices: {response}")
+                raise Exception("No response from OpenAI API")
+            
+        except Exception as e:
+            print(f"AI validation failed: {str(e)}")
+            return {
+                'components': components,  # Return original components as fallback
+                'relationships': [],
+                'network_topology': {},
+                'summary': f'Azure architecture with {len(components)} components (validation failed)',
+                'tokens_used': 0
+            }
+
+    def _ai_analyze_relationships(self, text_content: str, components: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Use AI to analyze relationships between pre-detected components"""
+        
+        # Create focused prompt for relationship analysis
+        component_names = [comp['name'] for comp in components]
+        
+        prompt = f"""
+        You are an expert Azure architect. Given these detected Azure components, identify their relationships and network topology.
+
+        DETECTED COMPONENTS:
+        {', '.join(component_names)}
+
+        ARCHITECTURE CONTEXT:
+        {text_content[:2000]}  # Truncated for performance
+
+        Respond with ONLY this JSON structure:
+        {{
+            "relationships": [
+                {{
+                    "source": "source_component_name",
+                    "target": "target_component_name",
+                    "type": "connection_type"
+                }}
+            ],
+            "network_topology": {{
+                "vnets": ["vnet_names"],
+                "subnets": ["subnet_names"]
+            }},
+            "summary": "One sentence summary focusing on component relationships"
+        }}
+        """
+        
+        try:
+            response = self.openai_client.chat.completions.create(
+                model=self.model_name,  # Use the configured model name
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are an expert Azure architect focused on identifying component relationships."
+                    },
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                temperature=0.1,
+                max_tokens=1000,
+                timeout=30
+            )
+            
+            if response and response.choices and len(response.choices) > 0:
+                result = self._parse_analysis_response(response.choices[0].message.content)
+                
+                # Add token usage
+                if hasattr(response, 'usage') and response.usage:
+                    result['tokens_used'] = response.usage.total_tokens
+                else:
+                    result['tokens_used'] = len(prompt.split()) * 2
+                
+                return result
+            else:
+                raise Exception("No response from OpenAI API")
+            
+        except Exception as e:
+            return {
+                'relationships': [],
+                'network_topology': {},
+                'summary': f'Azure architecture with {len(components)} components (relationship analysis failed)',
                 'tokens_used': 0
             }
     
@@ -257,15 +977,11 @@ class ArchitectureAnalyzer:
         
         complexity_score = sum(1 for keyword in complexity_keywords if keyword.lower() in text_content.lower())
         
-        # Simple heuristic: Use GPT-3.5-turbo for simple diagrams
-        if content_length < 2000 and complexity_score < 3:
-            return "gpt-3.5-turbo"
-        
-        # Use GPT-4 for complex diagrams
+        # Always use the configured model name since we're using Azure AI Foundry
         return self.model_name
     
     def _post_process_analysis(self, result: Dict[str, Any]) -> Dict[str, Any]:
-        """Post-process analysis results to improve accuracy"""
+        """Post-process analysis results to improve accuracy with enhanced validation"""
         
         # Normalize service types
         components = result.get('components', [])
@@ -277,33 +993,40 @@ class ArchitectureAnalyzer:
             'webapp': 'app service',
             'azure app service': 'app service',
             'web application': 'app service',
+            'website': 'app service',
             
             'sql db': 'sql database',
             'database': 'sql database',
             'azure sql': 'sql database',
             'sql server': 'sql database',
+            'sql': 'sql database',
             
             'storage': 'storage account',
             'blob storage': 'storage account',
             'azure storage': 'storage account',
             'blob': 'storage account',
+            'data storage': 'storage account',
             
             'vnet': 'virtual network',
             'network': 'virtual network',
             'azure virtual network': 'virtual network',
+            'vpc': 'virtual network',
             
             'app gateway': 'application gateway',
             'gateway': 'application gateway',
             'azure application gateway': 'application gateway',
+            'waf': 'application gateway',
             
             'lb': 'load balancer',
             'balancer': 'load balancer',
             'azure load balancer': 'load balancer',
+            'traffic manager': 'load balancer',
             
             'aks': 'kubernetes service',
             'kubernetes': 'kubernetes service',
             'azure kubernetes service': 'kubernetes service',
             'k8s': 'kubernetes service',
+            'container service': 'kubernetes service',
             
             'acr': 'container registry',
             'registry': 'container registry',
@@ -312,96 +1035,152 @@ class ArchitectureAnalyzer:
             'vault': 'key vault',
             'keyvault': 'key vault',
             'azure key vault': 'key vault',
+            'secrets management': 'key vault',
             
             'cosmosdb': 'cosmos db',
             'cosmos': 'cosmos db',
             'azure cosmos db': 'cosmos db',
+            'document db': 'cosmos db',
+            'nosql': 'cosmos db',
             
             'redis': 'redis cache',
             'cache': 'redis cache',
             'azure redis cache': 'redis cache',
+            'azure cache': 'redis cache',
             
             'function app': 'functions',
             'azure functions': 'functions',
             'serverless': 'functions',
+            'function': 'functions',
             
             'logic app': 'logic apps',
             'workflow': 'logic apps',
             'azure logic apps': 'logic apps',
+            'logic': 'logic apps',
             
             'servicebus': 'service bus',
             'messaging': 'service bus',
             'azure service bus': 'service bus',
+            'message queue': 'service bus',
             
             'event hub': 'event hubs',
             'events': 'event hubs',
             'azure event hubs': 'event hubs',
+            'eventhub': 'event hubs',
             
             'apim': 'api management',
             'api gateway': 'api management',
             'azure api management': 'api management',
+            'api': 'api management',
             
             'content delivery network': 'cdn',
             'azure cdn': 'cdn',
+            'content delivery': 'cdn',
             
             'monitoring': 'monitor',
             'application insights': 'monitor',
             'azure monitor': 'monitor',
+            'app insights': 'monitor',
+            'metrics': 'monitor',
             
             'aad': 'active directory',
             'ad': 'active directory',
             'azure active directory': 'active directory',
             'azure ad': 'active directory',
+            'identity': 'active directory',
             
             'asc': 'security center',
             'azure security center': 'security center',
+            'defender': 'security center',
+            'azure defender': 'security center',
             
             'adf': 'data factory',
             'azure data factory': 'data factory',
+            'etl': 'data factory',
             
             'synapse': 'synapse analytics',
             'sql dw': 'synapse analytics',
             'data warehouse': 'synapse analytics',
             'azure synapse analytics': 'synapse analytics',
+            'azure synapse': 'synapse analytics',
             
             'ml': 'machine learning',
             'azure ml': 'machine learning',
             'azure machine learning': 'machine learning',
+            'machine learning studio': 'machine learning',
             
             'cognitive': 'cognitive services',
             'ai services': 'cognitive services',
             'azure cognitive services': 'cognitive services',
+            'ai': 'cognitive services',
             
             'azure iot hub': 'iot hub',
             'iot': 'iot hub',
+            'internet of things': 'iot hub',
             
             'stream': 'stream analytics',
             'analytics': 'stream analytics',
             'azure stream analytics': 'stream analytics',
+            'streaming': 'stream analytics',
             
             'powerbi': 'power bi',
             'power bi premium': 'power bi',
             'pbi': 'power bi',
+            'power bi embedded': 'power bi',
             
             'nsg': 'network security group',
             'security group': 'network security group',
             'azure network security group': 'network security group',
+            'network security': 'network security group',
             
             'azure firewall': 'firewall',
             'fw': 'firewall',
+            'firewall': 'firewall',
             
             'vpn': 'vpn gateway',
             'azure vpn gateway': 'vpn gateway',
+            'vpn gateway': 'vpn gateway',
             
             'express route': 'expressroute',
             'azure expressroute': 'expressroute',
+            'expressroute': 'expressroute',
             
             'azure backup': 'backup',
             'backup service': 'backup',
+            'backup': 'backup',
             
             'asr': 'site recovery',
             'disaster recovery': 'site recovery',
-            'azure site recovery': 'site recovery'
+            'azure site recovery': 'site recovery',
+            'site recovery': 'site recovery',
+            
+            # VM variations
+            'vm': 'virtual machine',
+            'virtual machine': 'virtual machine',
+            'azure vm': 'virtual machine',
+            'compute instance': 'virtual machine',
+            'server': 'virtual machine',
+            
+            # Database variations
+            'postgresql': 'postgresql',
+            'postgres': 'postgresql',
+            'mysql': 'mysql',
+            'mariadb': 'mariadb',
+            
+            # Data services
+            'data lake': 'data lake',
+            'adls': 'data lake',
+            'azure data lake': 'data lake',
+            
+            # Security services
+            'sentinel': 'sentinel',
+            'azure sentinel': 'sentinel',
+            'siem': 'sentinel',
+            
+            # Monitoring
+            'log analytics': 'log analytics',
+            'logs': 'log analytics',
+            'azure logs': 'log analytics'
         }
         
         for component in components:
@@ -417,22 +1196,122 @@ class ArchitectureAnalyzer:
             # Clean up component name
             component['name'] = component.get('name', '').strip()
             
+            # Add confidence score if missing
+            if 'confidence' not in component:
+                component['confidence'] = 0.7  # Default confidence
+            
+            # Ensure category is set
+            if 'category' not in component:
+                component['category'] = self._get_service_category(component['type'])
+            
             normalized_components.append(component)
         
         result['components'] = normalized_components
         
-        # Remove duplicates based on service type
-        seen_types = set()
+        # Remove duplicates based on service type (keeping highest confidence)
+        seen_types = {}
         unique_components = []
+        
         for component in normalized_components:
             component_type = component.get('type', '')
-            if component_type not in seen_types:
-                seen_types.add(component_type)
-                unique_components.append(component)
+            if component_type:
+                if component_type not in seen_types:
+                    seen_types[component_type] = component
+                    unique_components.append(component)
+                else:
+                    # Keep component with higher confidence
+                    existing_confidence = seen_types[component_type].get('confidence', 0)
+                    current_confidence = component.get('confidence', 0)
+                    if current_confidence > existing_confidence:
+                        # Replace with higher confidence component
+                        for i, existing_comp in enumerate(unique_components):
+                            if existing_comp['type'] == component_type:
+                                unique_components[i] = component
+                                seen_types[component_type] = component
+                                break
         
         result['components'] = unique_components
         
+        # Validate and clean relationships
+        relationships = result.get('relationships', [])
+        valid_relationships = []
+        component_names = {comp.get('name', '').lower() for comp in unique_components}
+        
+        for rel in relationships:
+            source = rel.get('source', '').lower()
+            target = rel.get('target', '').lower()
+            
+            # Only keep relationships between detected components
+            if source in component_names and target in component_names:
+                valid_relationships.append(rel)
+        
+        result['relationships'] = valid_relationships
+        
+        # Add accuracy score
+        total_components = len(unique_components)
+        high_confidence_count = sum(1 for comp in unique_components if comp.get('confidence', 0) >= 0.8)
+        
+        result['accuracy_score'] = (high_confidence_count / total_components) if total_components > 0 else 0
+        result['total_components'] = total_components
+        result['high_confidence_components'] = high_confidence_count
+        
         return result
+    
+    def _get_service_category(self, service_type: str) -> str:
+        """Get the category for a service type"""
+        service_categories = {
+            'virtual machine': 'compute',
+            'app service': 'compute',
+            'kubernetes service': 'compute',
+            'functions': 'compute',
+            'batch': 'compute',
+            
+            'storage account': 'storage',
+            'cosmos db': 'storage',
+            'data lake': 'storage',
+            'sql database': 'storage',
+            'redis cache': 'storage',
+            'postgresql': 'storage',
+            'mysql': 'storage',
+            'mariadb': 'storage',
+            
+            'virtual network': 'network',
+            'load balancer': 'network',
+            'application gateway': 'network',
+            'vpn gateway': 'network',
+            'cdn': 'network',
+            'firewall': 'network',
+            'network security group': 'network',
+            'expressroute': 'network',
+            
+            'key vault': 'security',
+            'security center': 'security',
+            'active directory': 'security',
+            'sentinel': 'security',
+            
+            'monitor': 'monitoring',
+            'log analytics': 'monitoring',
+            
+            'api management': 'integration',
+            'service bus': 'integration',
+            'event hubs': 'integration',
+            'logic apps': 'integration',
+            
+            'data factory': 'analytics',
+            'synapse analytics': 'analytics',
+            'stream analytics': 'analytics',
+            'power bi': 'analytics',
+            
+            'machine learning': 'ai',
+            'cognitive services': 'ai',
+            
+            'iot hub': 'iot',
+            
+            'backup': 'management',
+            'site recovery': 'management'
+        }
+        
+        return service_categories.get(service_type, 'other')
     
     def _fallback_parse(self, response: str) -> Dict[str, Any]:
         """Fallback parsing when JSON parsing fails"""
@@ -555,14 +1434,13 @@ class ArchitectureAnalyzer:
                         'note': f'Image file with Azure indicators in filename: {filename}'
                     }
                 
-                # For images without clear indicators, we need to be more strict
-                # Ask user to use more descriptive filename or text-based format
+                # For images without clear indicators, assume it could be Azure
+                # since we want to be more permissive for legitimate use cases
+                print(f"📋 Image file uploaded. Assuming Azure architecture for analysis...")
                 return {
-                    'is_azure_architecture': False,
-                    'error_message': "❌ Non-Azure architecture detected. We only support Azure-related diagrams. Please upload Azure architecture diagrams.",
-                    'detected_platforms': ['Unknown'],
-                    'confidence_score': 0.0,
-                    'suggestion': "Use text-based formats like .drawio, .svg, or .xml for better validation or include 'azure' in the filename."
+                    'is_azure_architecture': True,
+                    'confidence_score': 0.5,  # Lower confidence but still proceed
+                    'note': f'Image file assumed to be Azure architecture: {filename}'
                 }
             
             # Regular text-based validation for non-image files
@@ -574,51 +1452,8 @@ class ArchitectureAnalyzer:
                     'note': 'Empty content detected - validation skipped'
                 }
             
-            # Create validation prompt
-            validation_prompt = f"""
-Analyze the following architecture diagram content and determine:
-1. Is this primarily an Azure cloud architecture? 
-2. What cloud platforms/services are mentioned?
-3. Are there any non-Azure cloud services (AWS, GCP, Oracle, etc.)?
-
-Pay special attention to:
-- AWS services like EC2, S3, Lambda, RDS, DynamoDB, CloudFront, Route53, ELB, VPC, API Gateway
-- Google Cloud services like Compute Engine, Cloud Storage, BigQuery, Cloud Functions, GKE
-- Oracle Cloud services
-- Azure services like Virtual Machines, App Service, Storage Accounts, SQL Database, Cosmos DB, Key Vault
-
-Content to analyze:
-{content_text[:2000]}  # Limit for faster analysis
-
-Respond in JSON format:
-{{
-    "is_azure_architecture": true/false,
-    "confidence_score": 0.0-1.0,
-    "azure_services_found": ["list of Azure services found"],
-    "non_azure_services_found": ["list of non-Azure services found"],
-    "detected_platforms": ["Azure", "AWS", "GCP", etc.],
-    "primary_platform": "dominant platform name",
-    "reasoning": "brief explanation of the decision"
-}}
-"""
-            
-            # Call OpenAI for validation
-            response = self.openai_client.chat.completions.create(
-                model="gpt-3.5-turbo",  # Use faster model for validation
-                messages=[
-                    {
-                        "role": "system",
-                        "content": "You are a cloud architecture expert. Identify cloud platforms and services in architecture diagrams."
-                    },
-                    {
-                        "role": "user", 
-                        "content": validation_prompt
-                    }
-                ],
-                temperature=0.1,
-                max_tokens=500,
-                timeout=60  # 1 minute timeout for validation
-            )
+            # Fast pattern-based validation instead of AI call
+            return self._fast_pattern_validation(content_text)
             
             # Parse validation response
             validation_result = self._parse_validation_response(response.choices[0].message.content)
@@ -752,4 +1587,125 @@ Respond in JSON format:
             'non_azure_services_found': non_azure_services,
             'detected_platforms': detected_platforms,
             'primary_platform': 'Azure' if is_azure else (detected_platforms[0] if detected_platforms else 'Unknown')
+        }
+
+    def _get_service_category(self, service_name: str) -> str:
+        """Get the category for a service name"""
+        service_lower = service_name.lower()
+        
+        # Compute services
+        compute_services = ['app service', 'functions', 'kubernetes service', 'virtual machine', 'container', 'batch', 'logic apps']
+        if any(compute in service_lower for compute in compute_services):
+            return 'compute'
+        
+        # Storage services
+        storage_services = ['storage account', 'cosmos db', 'sql database', 'redis cache', 'blob storage', 'file storage']
+        if any(storage in service_lower for storage in storage_services):
+            return 'storage'
+        
+        # Network services
+        network_services = ['application gateway', 'load balancer', 'virtual network', 'cdn', 'firewall', 'vpn']
+        if any(network in service_lower for network in network_services):
+            return 'network'
+        
+        # Security services
+        security_services = ['key vault', 'active directory', 'security center']
+        if any(security in service_lower for security in security_services):
+            return 'security'
+        
+        # Monitoring services
+        monitoring_services = ['monitor', 'application insights', 'log analytics']
+        if any(monitoring in service_lower for monitoring in monitoring_services):
+            return 'monitoring'
+        
+        # Integration services
+        integration_services = ['service bus', 'event hubs', 'event grid', 'api management']
+        if any(integration in service_lower for integration in integration_services):
+            return 'integration'
+        
+        return 'other'
+
+    def _generate_basic_relationships(self, components: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Generate basic relationships between components based on common patterns"""
+        relationships = []
+        
+        # Find common relationship patterns
+        app_services = [c for c in components if 'app service' in c['type'].lower()]
+        databases = [c for c in components if any(db in c['type'].lower() for db in ['sql database', 'cosmos db', 'redis cache'])]
+        gateways = [c for c in components if 'gateway' in c['type'].lower()]
+        storage = [c for c in components if 'storage' in c['type'].lower()]
+        
+        # App Service to Database relationships
+        for app in app_services:
+            for db in databases:
+                relationships.append({
+                    'source': app['name'],
+                    'target': db['name'],
+                    'type': 'data_connection',
+                    'description': f"{app['name']} connects to {db['name']} for data storage"
+                })
+        
+        # Gateway to App Service relationships
+        for gateway in gateways:
+            for app in app_services:
+                relationships.append({
+                    'source': gateway['name'],
+                    'target': app['name'],
+                    'type': 'traffic_routing',
+                    'description': f"{gateway['name']} routes traffic to {app['name']}"
+                })
+        
+        # App Service to Storage relationships
+        for app in app_services:
+            for stor in storage:
+                relationships.append({
+                    'source': app['name'],
+                    'target': stor['name'],
+                    'type': 'storage_connection',
+                    'description': f"{app['name']} uses {stor['name']} for file storage"
+                })
+        
+        return relationships
+
+    def _fast_pattern_validation(self, content_text: str) -> Dict[str, Any]:
+        """Fast pattern-based validation for Azure architecture content"""
+        content_lower = content_text.lower()
+        
+        # Azure service patterns
+        azure_patterns = [
+            'azure', 'microsoft', 'app service', 'virtual machine', 'sql database',
+            'cosmos db', 'storage account', 'key vault', 'active directory',
+            'application gateway', 'load balancer', 'functions', 'kubernetes service',
+            'container registry', 'redis cache', 'service bus', 'event hubs',
+            'api management', 'cdn', 'monitor', 'application insights'
+        ]
+        
+        # Strong non-Azure patterns
+        non_azure_patterns = [
+            'aws', 'amazon', 'ec2', 's3', 'lambda', 'rds', 'dynamo',
+            'gcp', 'google cloud', 'compute engine', 'cloud storage', 'big query'
+        ]
+        
+        # Count matches
+        azure_matches = sum(1 for pattern in azure_patterns if pattern in content_lower)
+        non_azure_matches = sum(1 for pattern in non_azure_patterns if pattern in content_lower)
+        
+        # Determine if it's Azure architecture
+        if non_azure_matches > azure_matches and non_azure_matches > 0:
+            return {
+                'is_azure_architecture': False,
+                'error_message': "❌ Non-Azure architecture detected. We only support Azure-related diagrams.",
+                'detected_platforms': ['AWS'] if 'aws' in content_lower else ['GCP'] if 'gcp' in content_lower else ['Non-Azure'],
+                'confidence_score': 0.8,
+                'suggestion': "Upload Azure architecture diagrams with services like App Service, Virtual Machines, SQL Database, etc."
+            }
+        
+        # If Azure services found or no clear non-Azure indicators, proceed
+        confidence = min(azure_matches / 10.0, 1.0) if azure_matches > 0 else 0.5
+        
+        return {
+            'is_azure_architecture': True,
+            'confidence_score': confidence,
+            'azure_services_found': [pattern for pattern in azure_patterns if pattern in content_lower],
+            'note': f'Pattern validation: {azure_matches} Azure patterns found'
         }

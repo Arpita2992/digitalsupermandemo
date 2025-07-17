@@ -71,6 +71,26 @@
                         </select>
                     </div>
                     
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <label for="processingMode" class="form-label fw-semibold">Processing Mode</label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="fastMode" name="fast_mode" value="true">
+                                <label class="form-check-label" for="fastMode">
+                                    <span class="fast-mode-label">⚡ Fast Mode</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="small text-muted">
+                            <div id="fastModeHelp" style="display: none;">
+                                <strong>Fast Mode:</strong> Architecture analysis only (~1 second) - Basic Bicep template, no policy checks or cost optimization
+                            </div>
+                            <div id="fullModeHelp">
+                                <strong>Full Mode:</strong> Complete analysis with all agents (~30-60 seconds) - Policy compliance, cost optimization, detailed templates
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="upload-area" id="uploadArea">
                         <i class="fas fa-cloud-upload-alt"></i>
                         <div class="upload-text">Drop your file here</div>

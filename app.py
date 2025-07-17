@@ -65,6 +65,7 @@ def upload_file():
     
     file = request.files['file']
     environment = request.form.get('environment', 'development')
+    fast_mode = request.form.get('fast_mode', 'false').lower() == 'true'
     
     if not allowed_file(file.filename):
         return jsonify({'success': False, 'message': 'Invalid file type'})
@@ -77,8 +78,16 @@ def upload_file():
     file.save(filepath)
     
     try:
-        # Process through optimized agent pipeline
-        result = process_architecture_diagram_async(filepath, environment)
+        # Choose processing mode
+        if fast_mode:
+            print("🚀 Using Fast Mode Processing")
+            from fast_mode_processor import FastModeProcessor
+            processor = FastModeProcessor()
+            result = processor.process_fast(filepath, environment)
+        else:
+            print("🔧 Using Full Processing Mode")
+            # Process through optimized agent pipeline
+            result = process_architecture_diagram_async(filepath, environment)
         
         # Check if there was a validation error
         if isinstance(result, dict) and result.get('error'):
