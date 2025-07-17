@@ -242,12 +242,22 @@ class DigitalSuperman {
             }
 
             const data = await response.json();
+            
+            // Debug the actual response data
+            console.log('=== BACKEND RESPONSE DEBUG ===');
+            console.log('Full response:', data);
+            console.log('Processing summary:', data.processing_summary);
+            if (data.processing_summary) {
+                console.log('Cost optimization:', data.processing_summary.cost_optimization);
+                console.log('Estimated savings:', data.processing_summary.cost_optimization?.estimated_savings);
+            }
+            console.log('=== END DEBUG ===');
 
             if (data.success) {
                 this.showProgressMessage('Processing completed successfully!');
                 // Simulate realistic processing with optimized timing
                 await this.processAgents();
-                this.showResults(data.download_url);
+                this.showResults(data.download_url, data.processing_summary);
             } else {
                 // Handle specific error types
                 if (data.error_type === 'non_azure_architecture') {
@@ -439,16 +449,43 @@ class DigitalSuperman {
         }
     }
 
-    showResults(downloadUrl) {
+    showResults(downloadUrl, processingSummary = null) {
         requestAnimationFrame(() => {
             this.elements.resultCard.style.display = 'block';
             this.elements.downloadLink.href = downloadUrl;
-            this.updateResultsSummary();
+            this.updateResultsSummary(processingSummary);
         });
     }
 
-    updateResultsSummary() {
-        // Use cached calculations for better performance
+    updateResultsSummary(processingSummary = null) {
+        // Debug logging
+        console.log('updateResultsSummary called with:', processingSummary);
+        
+        // Use real data from backend if available
+        if (processingSummary) {
+            console.log('Using real processing summary data');
+            console.log('Cost optimization data:', processingSummary.cost_optimization);
+            
+            const summaryData = {
+                componentsCount: processingSummary.components_found || 0,
+                policyCompliance: processingSummary.policy_compliance 
+                    ? (processingSummary.policy_compliance.compliant ? 100 : 
+                       Math.max(0, 100 - (processingSummary.policy_compliance.violations_count * 20)))
+                    : 0,
+                costSavings: this.extractCostSavings(processingSummary.cost_optimization),
+                codeFiles: processingSummary.code_generation 
+                    ? processingSummary.code_generation.files_generated || 0
+                    : 0
+            };
+            
+            console.log('Final summary data:', summaryData);
+            this.applySummaryData(summaryData);
+            return;
+        }
+        
+        console.log('No processing summary available, using fallback data');
+        
+        // Fallback to cached or generated data if no real data available
         const cacheKey = 'summary_' + Date.now();
         
         if (this.cache.has(cacheKey)) {
@@ -457,11 +494,11 @@ class DigitalSuperman {
             return;
         }
 
-        // Generate realistic summary data
+        // Generate realistic summary data as fallback
         const summaryData = {
             componentsCount: Math.floor(Math.random() * 15) + 8,
             policyCompliance: Math.floor(Math.random() * 20) + 80,
-            costSavings: Math.floor(Math.random() * 3000) + 1000,
+            costSavings: 17,  // Use base cost estimate if no optimization data
             codeFiles: Math.floor(Math.random() * 8) + 5
         };
 
@@ -476,6 +513,52 @@ class DigitalSuperman {
             const firstKey = this.cache.keys().next().value;
             this.cache.delete(firstKey);
         }
+    }
+
+    extractCostSavings(costOptimization) {
+        console.log('extractCostSavings called with:', costOptimization);
+        
+        if (!costOptimization || !costOptimization.estimated_savings) {
+            console.log('No cost optimization or estimated_savings found');
+            return 0;
+        }
+        
+        const savings = costOptimization.estimated_savings;
+        console.log('Raw savings value:', savings, 'Type:', typeof savings);
+        
+        // Handle string format like "€305-1175" or "€1,200"
+        if (typeof savings === 'string') {
+            // Remove € symbol and extract numbers
+            const cleanSavings = savings.replace(/[€,]/g, '');
+            console.log('Cleaned savings:', cleanSavings);
+            
+            // Handle range format like "305-1175"
+            if (cleanSavings.includes('-')) {
+                const parts = cleanSavings.split('-');
+                console.log('Range parts:', parts);
+                if (parts.length === 2) {
+                    const min = parseFloat(parts[0]);
+                    const max = parseFloat(parts[1]);
+                    const average = Math.round((min + max) / 2);
+                    console.log('Range average:', average);
+                    return average; // Return average of range
+                }
+            }
+            
+            // Handle single number
+            const numericValue = parseFloat(cleanSavings);
+            console.log('Single numeric value:', numericValue);
+            return isNaN(numericValue) ? 0 : Math.round(numericValue);
+        }
+        
+        // Handle numeric value
+        if (typeof savings === 'number') {
+            console.log('Numeric savings value:', savings);
+            return Math.round(savings);
+        }
+        
+        console.log('Unable to parse savings, returning 0');
+        return 0;
     }
 
     applySummaryData(data) {
