@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  digital-superman:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - FLASK_ENV=production
+      - AZURE_AI_AGENT1_ENDPOINT=${AZURE_AI_AGENT1_ENDPOINT}
+      - AZURE_AI_AGENT1_KEY=${AZURE_AI_AGENT1_KEY}
+      - AZURE_AI_AGENT2_ENDPOINT=${AZURE_AI_AGENT2_ENDPOINT}
+      - AZURE_AI_AGENT2_KEY=${AZURE_AI_AGENT2_KEY}
+      - AZURE_AI_AGENT3_ENDPOINT=${AZURE_AI_AGENT3_ENDPOINT}
+      - AZURE_AI_AGENT3_KEY=${AZURE_AI_AGENT3_KEY}
+      - AZURE_AI_AGENT4_ENDPOINT=${AZURE_AI_AGENT4_ENDPOINT}
+      - AZURE_AI_AGENT4_KEY=${AZURE_AI_AGENT4_KEY}
+      - SECRET_KEY=${SECRET_KEY}
+      - DEBUG=False
+    volumes:
+      - ./uploads:/app/uploads
+      - ./output:/app/output
+      - ./logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+      - digital-superman
+    restart: unless-stopped

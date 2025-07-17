@@ -483,7 +483,7 @@ class DigitalSuperman {
         requestAnimationFrame(() => {
             document.getElementById('componentsCount').textContent = data.componentsCount;
             document.getElementById('policyCompliance').textContent = data.policyCompliance + '%';
-            document.getElementById('costSavings').textContent = '$' + data.costSavings.toLocaleString();
+            document.getElementById('costSavings').textContent = '€' + data.costSavings.toLocaleString();
             document.getElementById('codeFiles').textContent = data.codeFiles;
         });
     }

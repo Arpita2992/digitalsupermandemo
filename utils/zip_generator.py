@@ -130,7 +130,7 @@ class ZipGenerator:
             cost_json = json.dumps(cost_estimation, indent=2)
             zipf.writestr("cost_estimation.json", cost_json)
             
-            print(f"💰 Cost estimation completed: ${cost_estimation.get('total_monthly_cost', 0):.2f}/month")
+            print(f"💰 Cost estimation completed: €{cost_estimation.get('total_monthly_cost', 0):.2f}/month")
             
         except Exception as e:
             print(f"❌ Error generating cost estimation: {str(e)}")
