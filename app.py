@@ -7,6 +7,7 @@ from werkzeug.utils import secure_filename
 from datetime import datetime
 import config
 from agents.architecture_analyzer import ArchitectureAnalyzer
+from agents.fast_analyzer import FastArchitectureAnalyzer
 from agents.policy_checker import PolicyChecker
 from agents.cost_optimization_agent import CostOptimizationAgent
 from agents.bicep_generator import BicepGenerator

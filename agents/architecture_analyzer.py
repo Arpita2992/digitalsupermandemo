@@ -874,46 +874,81 @@ class ArchitectureAnalyzer:
             text_content = text_content[:4000] + "... [truncated for performance]"
         
         prompt = f"""
-        You are an expert Azure architect. Analyze this architecture diagram and extract Azure services with high accuracy.
+        You are an expert Azure architect with extensive knowledge of Azure service icons, naming conventions, and architectural patterns. Analyze this architecture diagram to extract Azure services with maximum accuracy.
 
-        ARCHITECTURE CONTENT:
+        AZURE SERVICES REFERENCE GUIDE:
+        🖥️ COMPUTE: 
+        - Virtual Machines: VM, Windows Server, Linux → "virtual_machine"
+        - App Service: Web App, webapp → "app_service"  
+        - Azure Functions: Functions, serverless → "azure_functions"
+        - AKS: Kubernetes, K8s → "kubernetes_service"
+        - Container Instances: ACI → "container_instances"
+        
+        🗄️ STORAGE:
+        - Storage Account: Blob Storage, File Storage → "storage_account"
+        - Data Lake: ADLS, Data Lake Storage → "data_lake_storage"
+        - Managed Disks: Premium SSD, Standard HDD → "managed_disks"
+        
+        🌐 NETWORKING:
+        - Virtual Network: VNet → "virtual_network"
+        - Application Gateway: App Gateway, WAF → "application_gateway"
+        - Load Balancer: LB → "load_balancer"
+        - VPN Gateway: Site-to-Site VPN → "vpn_gateway"
+        - ExpressRoute: Dedicated connection → "expressroute"
+        - CDN: Content Delivery Network → "cdn"
+        - Firewall: Azure Firewall → "azure_firewall"
+        - Network Security Group: NSG → "network_security_group"
+        
+        🗃️ DATABASES:
+        - SQL Database: Azure SQL, SQL DB → "sql_database"
+        - Cosmos DB: NoSQL, DocumentDB → "cosmos_db"
+        - PostgreSQL: PostgreSQL DB → "postgresql_database"
+        - MySQL: MySQL DB → "mysql_database"
+        - Redis Cache: Redis → "redis_cache"
+        
+        🔐 SECURITY & IDENTITY:
+        - Active Directory: AAD, Azure AD → "active_directory"
+        - Key Vault: Secrets, Keys → "key_vault"
+        - Security Center: ASC → "security_center"
+        - Sentinel: SIEM → "azure_sentinel"
+        
+        📡 INTEGRATION:
+        - Service Bus: Messaging → "service_bus"
+        - Event Hubs: Event streaming → "event_hubs"
+        - Event Grid: Event routing → "event_grid"
+        - API Management: APIM, API Gateway → "api_management"
+        - Logic Apps: Workflow → "logic_apps"
+        
+        📊 ANALYTICS & AI:
+        - Data Factory: ETL, ADF → "data_factory"
+        - Synapse Analytics: Data Warehouse → "synapse_analytics"
+        - Stream Analytics: Real-time analytics → "stream_analytics"
+        - Machine Learning: Azure ML → "machine_learning"
+        - Cognitive Services: AI services → "cognitive_services"
+        - Power BI: Business Intelligence → "power_bi"
+        
+        📱 IOT:
+        - IoT Hub: Device management → "iot_hub"
+        - IoT Central: SaaS IoT → "iot_central"
+        - Time Series Insights: TSI → "time_series_insights"
+        
+        🔧 MANAGEMENT:
+        - Azure Monitor: Monitoring, App Insights → "azure_monitor"
+        - Log Analytics: Log workspace → "log_analytics"
+        - Azure DevOps: CI/CD → "azure_devops"
+        - Backup: Azure Backup → "azure_backup"
+        - Site Recovery: DR → "site_recovery"
+
+        ARCHITECTURE CONTENT TO ANALYZE:
         {text_content}
 
-        IMPORTANT: Focus on identifying these Azure services precisely:
-        - Virtual Machines (VM) -> "virtual machine"
-        - App Service (Web Apps) -> "app service"
-        - Azure SQL Database -> "sql database"
-        - Storage Account (Blob, Files) -> "storage account"
-        - Virtual Network (VNet) -> "virtual network"
-        - Application Gateway -> "application gateway"
-        - Load Balancer -> "load balancer"
-        - Azure Kubernetes Service (AKS) -> "kubernetes service"
-        - Container Registry (ACR) -> "container registry"
-        - Key Vault -> "key vault"
-        - Cosmos DB -> "cosmos db"
-        - Redis Cache -> "redis cache"
-        - Functions -> "functions"
-        - Logic Apps -> "logic apps"
-        - Service Bus -> "service bus"
-        - Event Hubs -> "event hubs"
-        - API Management -> "api management"
-        - CDN -> "cdn"
-        - Monitor/Application Insights -> "monitor"
-        - Active Directory -> "active directory"
-        - Security Center -> "security center"
-        - Data Factory -> "data factory"
-        - Synapse Analytics -> "synapse analytics"
-        - Machine Learning -> "machine learning"
-        - Cognitive Services -> "cognitive services"
-        - IoT Hub -> "iot hub"
-        - Stream Analytics -> "stream analytics"
-        - Power BI -> "power bi"
-        - Network Security Group -> "network security group"
-        - Firewall -> "firewall"
-        - VPN Gateway -> "vpn gateway"
-        - ExpressRoute -> "expressroute"
-        - Backup -> "backup"
-        - Site Recovery -> "site recovery"
+        CRITICAL INSTRUCTIONS:
+        1. Use EXACT service type names with underscores (e.g., "app_service" not "app service")
+        2. Look for Azure blue colors (#0078D4) and Microsoft iconography
+        3. Check for service names in labels, tooltips, and legends
+        4. Identify connection lines showing data flow
+        5. Extract any mentioned configurations, sizes, or tiers
+        6. Provide realistic cost estimates in EUR when possible
 
         Respond with ONLY this JSON structure (no additional text):
         {{

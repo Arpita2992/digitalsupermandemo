@@ -161,20 +161,7 @@ An error occurred while generating the cost estimation:
             
             # Add to ZIP
             zipf.writestr(f'reports/cost_optimization_report_{environment}.md', report_content)
-            
-            # Also add raw optimization data as JSON
-            optimization_data = {
-                'optimization_summary': cost_optimization.get('optimization_summary', {}),
-                'optimization_recommendations': cost_optimization.get('optimization_recommendations', []),
-                'cost_savings': cost_optimization.get('cost_savings', []),
-                'ai_insights': cost_optimization.get('ai_insights', {}),
-                'framework_applied': cost_optimization.get('framework_applied', 'Microsoft Well-Architected Framework'),
-                'bicep_generation_hints': cost_optimization.get('bicep_generation_hints', {})
-            }
-            
-            zipf.writestr(f'data/cost_optimization_data_{environment}.json', 
-                         json.dumps(optimization_data, indent=2))
-            
+
         except Exception as e:
             print(f"⚠️ Warning: Could not add cost optimization report: {str(e)}")
             # Add fallback report

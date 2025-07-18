@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Superman - Azure Architecture to Infrastructure Code</title>
+    
+    <!-- Modern UI Stylesheet -->
+    <link href="{{ url_for('static', filename='css/modern-ui-enhanced.css') }}" rel="stylesheet">
+    
+    <!-- Google Fonts - Optimized Loading -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Favicons -->
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    
+    <!-- Meta Tags for Performance and SEO -->
+    <meta name="description" content="Transform Azure architecture diagrams into production-ready Bicep templates and DevOps pipelines using AI">
+    <meta name="theme-color" content="#667eea">
+    <meta name="robots" content="index, follow">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar" role="navigation" aria-label="main navigation">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <div class="brand-icon">
+                    <i class="fas fa-bolt" aria-hidden="true"></i>
+                </div>
+                <h1 class="brand-title">Digital Superman</h1>
+            </div>
+            <div class="nav-subtitle">
+                Azure Architecture to Infrastructure Code
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content" role="main">
+        <!-- Hero Section -->
+        <section class="hero-section" aria-labelledby="hero-title">
+            <div class="hero-container">
+                <div class="hero-content">
+                    <div class="hero-badge">
+                        <i class="fas fa-magic" aria-hidden="true"></i>
+                        <span>AI-Powered Infrastructure</span>
+                    </div>
+                    <h1 id="hero-title" class="hero-title">
+                        Transform Your Azure Architecture
+                        <span class="hero-title-accent">Into Code</span>
+                    </h1>
+                    <p class="hero-description">
+                        Upload your architecture diagrams and let our intelligent AI agents convert them into 
+                        production-ready Bicep templates, Azure DevOps pipelines, and deployment scripts.
+                    </p>
+                    <div class="hero-features">
+                        <div class="feature-tag">
+                            <i class="fas fa-robot" aria-hidden="true"></i>
+                            <span>3 AI Agents</span>
+                        </div>
+                        <div class="feature-tag">
+                            <i class="fas fa-shield-check" aria-hidden="true"></i>
+                            <span>Policy Validation</span>
+                        </div>
+                        <div class="feature-tag">
+                            <i class="fas fa-code-branch" aria-hidden="true"></i>
+                            <span>DevOps Ready</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Upload Section -->
+        <section class="upload-section" aria-labelledby="upload-title">
+            <div class="section-container">
+                <div class="glass-card upload-card">
+                    <div class="card-header">
+                        <div class="card-icon upload-icon">
+                            <i class="fas fa-cloud-upload-alt" aria-hidden="true"></i>
+                        </div>
+                        <div class="card-header-content">
+                            <h2 id="upload-title" class="card-title">Upload Architecture</h2>
+                            <p class="card-description">
+                                Supports PNG, JPG, PDF, XML, Draw.io, VSDX, and SVG files up to 16MB
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <form id="uploadForm" enctype="multipart/form-data" novalidate>
+                        <!-- Environment Selection -->
+                        <div class="form-group">
+                            <label for="environment" class="form-label">
+                                <i class="fas fa-layer-group" aria-hidden="true"></i>
+                                Environment
+                            </label>
+                            <select class="form-select" id="environment" name="environment" required>
+                                <option value="">Choose your environment...</option>
+                                <option value="development">Development</option>
+                                <option value="staging">Staging</option>
+                                <option value="production">Production</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Processing Mode Toggle -->
+                        <div class="form-group">
+                            <div class="mode-toggle-container">
+                                <label for="fastMode" class="form-label">
+                                    <i class="fas fa-settings" aria-hidden="true"></i>
+                                    Processing Mode
+                                </label>
+                                <div class="mode-toggle">
+                                    <input type="checkbox" id="fastMode" name="fast_mode" class="mode-toggle-input">
+                                    <label for="fastMode" class="mode-toggle-label">
+                                        <span class="mode-toggle-text">Fast Mode</span>
+                                        <i class="fas fa-bolt mode-toggle-icon" aria-hidden="true"></i>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="mode-description">
+                                <div id="fastModeDesc" class="mode-desc-item" style="display: none;">
+                                    <strong>Fast Mode:</strong> Quick architecture analysis (~15 seconds) - Basic Bicep template generation
+                                </div>
+                                <div id="fullModeDesc" class="mode-desc-item">
+                                    <strong>Full Mode:</strong> Complete analysis (~45-60 seconds) - Policy validation, cost optimization, detailed templates
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- File Upload Area -->
+                        <div class="upload-zone" id="uploadZone" tabindex="0" role="button" aria-label="Upload file area">
+                            <input type="file" id="fileInput" name="file" 
+                                   accept=".png,.jpg,.jpeg,.pdf,.xml,.drawio,.vsdx,.svg" 
+                                   aria-describedby="file-help">
+                            <div class="upload-content">
+                                <div class="upload-icon-large">
+                                    <i class="fas fa-cloud-upload-alt" aria-hidden="true"></i>
+                                </div>
+                                <h3 class="upload-title">Drop your file here</h3>
+                                <p class="upload-subtitle">or <strong>click to browse</strong></p>
+                                <div id="file-help" class="upload-help">
+                                    PNG, JPG, PDF, XML, Draw.io, VSDX, SVG • Maximum 16MB
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- File Preview -->
+                        <div class="file-preview" id="filePreview" style="display: none;">
+                            <div class="file-preview-content">
+                                <div class="file-preview-icon">
+                                    <i class="fas fa-file-alt" aria-hidden="true"></i>
+                                </div>
+                                <div class="file-preview-info">
+                                    <h4 class="file-preview-name" id="fileName">filename.png</h4>
+                                    <p class="file-preview-size" id="fileSize">1.2 MB</p>
+                                </div>
+                                <button type="button" class="file-preview-remove" id="removeFile" aria-label="Remove file">
+                                    <i class="fas fa-times" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="form-actions" id="formActions" style="display: none;">
+                            <button type="submit" class="btn-primary" id="submitBtn">
+                                <i class="fas fa-rocket" aria-hidden="true"></i>
+                                <span>Start AI Processing</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- AI Agents Section -->
+        <section class="agents-section" aria-labelledby="agents-title">
+            <div class="section-container">
+                <div class="section-header">
+                    <h2 id="agents-title" class="section-title">AI Processing Pipeline</h2>
+                    <p class="section-description">
+                        Our specialized AI agents work together to analyze and transform your architecture
+                    </p>
+                </div>
+                
+                <div class="agents-grid">
+                    <!-- Architecture Analyzer Agent -->
+                    <div class="agent-card" id="agent1">
+                        <div class="agent-header">
+                            <div class="agent-icon analyzer-icon">
+                                <i class="fas fa-search-plus" aria-hidden="true"></i>
+                            </div>
+                            <div class="agent-status waiting" id="agent1Status">
+                                <i class="fas fa-clock" aria-hidden="true"></i>
+                                <span>Waiting</span>
+                            </div>
+                        </div>
+                        <div class="agent-content">
+                            <h3 class="agent-title">Architecture Analyzer</h3>
+                            <p class="agent-description">
+                                Intelligently analyzes architecture diagrams to identify Azure services, 
+                                connections, and relationships using advanced computer vision.
+                            </p>
+                        </div>
+                        <div class="agent-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="agent1Progress"></div>
+                            </div>
+                            <span class="progress-text" id="agent1ProgressText">0%</span>
+                        </div>
+                    </div>
+
+                    <!-- Policy Checker Agent -->
+                    <div class="agent-card" id="agent2">
+                        <div class="agent-header">
+                            <div class="agent-icon policy-icon">
+                                <i class="fas fa-shield-check" aria-hidden="true"></i>
+                            </div>
+                            <div class="agent-status waiting" id="agent2Status">
+                                <i class="fas fa-clock" aria-hidden="true"></i>
+                                <span>Waiting</span>
+                            </div>
+                        </div>
+                        <div class="agent-content">
+                            <h3 class="agent-title">Policy Checker</h3>
+                            <p class="agent-description">
+                                Validates architecture against Azure policies, security best practices, 
+                                and compliance requirements for enterprise readiness.
+                            </p>
+                        </div>
+                        <div class="agent-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="agent2Progress"></div>
+                            </div>
+                            <span class="progress-text" id="agent2ProgressText">0%</span>
+                        </div>
+                    </div>
+
+                    <!-- Bicep Generator Agent -->
+                    <div class="agent-card" id="agent3">
+                        <div class="agent-header">
+                            <div class="agent-icon generator-icon">
+                                <i class="fas fa-code" aria-hidden="true"></i>
+                            </div>
+                            <div class="agent-status waiting" id="agent3Status">
+                                <i class="fas fa-clock" aria-hidden="true"></i>
+                                <span>Waiting</span>
+                            </div>
+                        </div>
+                        <div class="agent-content">
+                            <h3 class="agent-title">Bicep Generator</h3>
+                            <p class="agent-description">
+                                Generates production-ready Bicep templates, parameter files, 
+                                and Azure DevOps deployment pipelines with best practices.
+                            </p>
+                        </div>
+                        <div class="agent-progress">
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="agent3Progress"></div>
+                            </div>
+                            <span class="progress-text" id="agent3ProgressText">0%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Progress Section -->
+        <section class="progress-section" id="progressSection" style="display: none;" aria-labelledby="progress-title">
+            <div class="section-container">
+                <div class="glass-card progress-card">
+                    <div class="card-header">
+                        <div class="card-icon progress-icon">
+                            <i class="fas fa-cogs" aria-hidden="true"></i>
+                        </div>
+                        <div class="card-header-content">
+                            <h2 id="progress-title" class="card-title">Processing Architecture</h2>
+                            <p class="card-description" id="progressDescription">
+                                AI agents are analyzing your architecture diagram...
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="overall-progress">
+                        <div class="progress-bar-container">
+                            <div class="progress-bar large">
+                                <div class="progress-fill" id="overallProgress"></div>
+                            </div>
+                            <div class="progress-stats">
+                                <span class="progress-percentage" id="overallPercentage">0%</span>
+                                <span class="progress-eta" id="progressETA">Estimating time...</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="progress-status" id="progressStatus">
+                        <div class="status-item active">
+                            <i class="fas fa-play-circle" aria-hidden="true"></i>
+                            <span>Initializing analysis...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Results Section -->
+        <section class="results-section" id="resultsSection" style="display: none;" aria-labelledby="results-title">
+            <div class="section-container">
+                <div class="glass-card results-card">
+                    <div class="card-header">
+                        <div class="card-icon success-icon">
+                            <i class="fas fa-check-circle" aria-hidden="true"></i>
+                        </div>
+                        <div class="card-header-content">
+                            <h2 id="results-title" class="card-title">Analysis Complete</h2>
+                            <p class="card-description">
+                                Your infrastructure code package is ready for download
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="results-content" id="resultsContent">
+                        <!-- Results will be dynamically populated -->
+                        <div class="results-summary">
+                            <div class="summary-item">
+                                <div class="summary-icon">
+                                    <i class="fas fa-file-code" aria-hidden="true"></i>
+                                </div>
+                                <div class="summary-content">
+                                    <h4>Bicep Templates</h4>
+                                    <p>Production-ready infrastructure templates</p>
+                                </div>
+                            </div>
+                            <div class="summary-item">
+                                <div class="summary-icon">
+                                    <i class="fas fa-cog" aria-hidden="true"></i>
+                                </div>
+                                <div class="summary-content">
+                                    <h4>DevOps Pipelines</h4>
+                                    <p>Azure DevOps YAML deployment files</p>
+                                </div>
+                            </div>
+                            <div class="summary-item">
+                                <div class="summary-icon">
+                                    <i class="fas fa-book" aria-hidden="true"></i>
+                                </div>
+                                <div class="summary-content">
+                                    <h4>Documentation</h4>
+                                    <p>Deployment guides and best practices</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="results-actions">
+                        <button class="btn-success" id="downloadBtn" style="display: none;">
+                            <i class="fas fa-download" aria-hidden="true"></i>
+                            <span>Download Package</span>
+                        </button>
+                        <button class="btn-secondary" id="newAnalysisBtn">
+                            <i class="fas fa-plus" aria-hidden="true"></i>
+                            <span>Start New Analysis</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer" role="contentinfo">
+        <div class="footer-container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <div class="brand-icon">
+                        <i class="fas fa-bolt" aria-hidden="true"></i>
+                    </div>
+                    <span>Digital Superman</span>
+                </div>
+                <p class="footer-description">
+                    Transforming Azure architecture into production-ready infrastructure code
+                </p>
+            </div>
+            <div class="footer-links">
+                <a href="#" class="footer-link">Documentation</a>
+                <a href="#" class="footer-link">API Reference</a>
+                <a href="#" class="footer-link">Support</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Modern JavaScript -->
+    <script src="{{ url_for('static', filename='js/modern-app-enhanced.js') }}"></script>
+    
+    <!-- Service Worker for PWA capabilities -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js').catch(function(error) {
+                    console.log('ServiceWorker registration failed: ', error);
+                });
+            });
+        }
+    </script>
+</body>
+</html>
