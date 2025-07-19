@@ -1,38 +1,68 @@
 /* Notification/Toast Popup Styling */
 .notification {
   position: fixed;
-  top: 20px;
-  right: 20px;
-  padding: 15px 22px;
-  background: rgba(34, 34, 34, 0.96); /* nearly black for contrast */
-  color: #fff !important;
-  border-radius: 12px;
-  border: 1.5px solid #764ba2;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
-  z-index: 2000;
-  font-size: 16px;
-  font-weight: 600;
-  letter-spacing: 0.2px;
-  max-width: 340px;
+  top: 24px;
+  right: 24px;
+  padding: 20px 36px 20px 56px;
+  background: #fffbe6;
+  color: #222 !important;
+  border-radius: 16px;
+  border: 2.5px solid #FFD600;
+  border-left: 10px solid #007846;
+  box-shadow: 0 10px 40px 0 rgba(0,0,0,0.22), 0 2px 8px 0 rgba(0,120,70,0.10);
+  z-index: 3000;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.1px;
+  max-width: 400px;
   text-align: left;
-  opacity: 0.98;
-  transition: background 0.2s, color 0.2s;
+  opacity: 1;
+  font-family: 'Inter', 'Poppins', Arial, sans-serif;
+  transition: background 0.2s, color 0.2s, border 0.2s, box-shadow 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  animation: abn-toast-fadein 0.5s cubic-bezier(.4,0,.2,1);
+}
+
+@keyframes abn-toast-fadein {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.notification::before {
+  content: '\f058'; /* FontAwesome check-circle */
+  font-family: 'Font Awesome 6 Free', 'FontAwesome', Arial, sans-serif;
+  font-weight: 900;
+  font-size: 26px;
+  margin-right: 10px;
+  margin-left: -32px;
+  color: #007846;
+  display: inline-block;
+  vertical-align: middle;
+}
 }
 
 .notification.info {
-  background: rgba(34, 34, 34, 0.96);
-  color: #fff !important;
-  border-color: #764ba2;
+  background: #FFD600;
+  color: #222 !important;
+  border-color: #007846;
+  border-left: 10px solid #FFD600;
+
 }
 .notification.success {
-  background: rgba(46, 204, 113, 0.97);
+  background: #007846;
   color: #fff !important;
-  border-color: #27ae60;
+  border-color: #FFD600;
+  border-left: 10px solid #007846;
+
 }
 .notification.error {
-  background: rgba(198, 40, 40, 0.97);
+  background: #C62828;
   color: #fff !important;
-  border-color: #c62828;
+  border-color: #FFD600;
+  border-left: 10px solid #C62828;
+
 }
 /* ===============================================
    DIGITAL SUPERMAN - GLASSY PURPLE-PINK
@@ -49,15 +79,15 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
 
 body {
-    font-family: 'Poppins', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-    color: #ffffff;
+    font-family: 'Inter', Arial, 'Poppins', sans-serif;
+    background: linear-gradient(135deg, #f6f7f4 60%, #fffbe6 100%);
+    color: #222;
     line-height: 1.6;
-    font-size: 15px;
+    font-size: 16px;
     font-weight: 400;
     min-height: 100vh;
     position: relative;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.1px;
 }
 
 /* Animated Background Pattern */
@@ -84,16 +114,16 @@ body::before {
 
 /* Header - Glass Morphism */
 .header {
-    background: rgba(118, 75, 162, 0.2);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-    color: #ffffff;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border-bottom: 3px solid #FFD600;
+    color: #007846;
     padding: 20px 0;
     position: sticky;
     top: 0;
     z-index: 100;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 12px rgba(0, 120, 70, 0.06);
 }
 
 .header-content {
@@ -110,31 +140,28 @@ body::before {
 
 .brand i {
     font-size: 28px;
-    color: #ffffff;
-    text-shadow: 0 2px 8px rgba(255, 255, 255, 0.3);
-    animation: pulse 2s infinite;
+    color: #007846;
+    text-shadow: none;
+    animation: none;
 }
 
 .brand h1 {
     font-size: 26px;
     font-weight: 700;
     margin: 0;
-    text-shadow: 0 2px 8px rgba(255, 255, 255, 0.2);
+    color: #007846;
     letter-spacing: 0.5px;
-    background: linear-gradient(135deg, #ffffff 0%, #f0f4ff 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    background: none;
 }
 
 .tagline {
-    font-size: 14px;
-    color: rgba(255, 255, 255, 0.9);
+    font-size: 15px;
+    color: #222;
     margin: 0;
-    font-weight: 300;
-    letter-spacing: 0.8px;
-    text-transform: uppercase;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    font-weight: 400;
+    letter-spacing: 0.2px;
+    text-transform: none;
+    text-shadow: none;
 }
 
 /* Main Container - Glass Layout */
@@ -152,15 +179,13 @@ body::before {
 
 /* Glass Cards */
 .card {
-    background: rgba(255, 255, 255, 0.25);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 20px;
-    padding: 30px;
-    box-shadow: 
-        0 8px 32px rgba(0, 0, 0, 0.1),
-        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1.5px solid #E0E0E0;
+    border-radius: 18px;
+    padding: 28px;
+    box-shadow: 0 4px 24px rgba(0,120,70,0.07);
     transition: all 0.3s ease;
     position: relative;
     overflow: hidden;
@@ -188,9 +213,9 @@ body::before {
     display: flex;
     align-items: center;
     gap: 15px;
-    margin-bottom: 25px;
-    padding-bottom: 15px;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    margin-bottom: 22px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #FFD600;
     position: relative;
 }
 
@@ -206,18 +231,18 @@ body::before {
 
 .card-header i {
     font-size: 24px;
-    color: rgba(255, 255, 255, 0.9);
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-    animation: float 3s ease-in-out infinite;
+    color: #007846;
+    text-shadow: none;
+    animation: none;
 }
 
 .card-header h2 {
     font-size: 20px;
     font-weight: 600;
     margin: 0;
-    color: rgba(255, 255, 255, 0.95);
+    color: #007846;
     letter-spacing: 0.3px;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    text-shadow: none;
 }
 
 /* Form Elements with Glass Effect */
@@ -305,7 +330,7 @@ body::before {
     backdrop-filter: blur(15px);
     -webkit-backdrop-filter: blur(15px);
     border-radius: 15px;
-    padding: 40px;
+    padding: 18px 10px;
     text-align: center;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -348,7 +373,7 @@ body::before {
 }
 
 .upload-content i {
-    font-size: 48px;
+    font-size: 28px;
     color: #000000;
     margin-bottom: 15px;
     display: block;
@@ -357,18 +382,18 @@ body::before {
 }
 
 .upload-content p {
-    font-size: 18px;
-    margin-bottom: 8px;
+    font-size: 14px;
+    margin-bottom: 5px;
     font-weight: 500;
     color: #2d1b69;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.2px;
 }
 
 .upload-content small {
     color: #5b4f87;
-    font-size: 13px;
+    font-size: 10px;
     font-weight: 400;
-    letter-spacing: 0.2px;
+    letter-spacing: 0.15px;
 }
 
 /* Glass File Preview */
@@ -434,52 +459,52 @@ body::before {
 
 /* Glass Buttons */
 .btn-primary, .btn-success, .btn-secondary {
-    padding: 15px 25px;
-    border: 1px solid rgba(0, 0, 0, 0.2);
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
-    color: #ffffff;
-    font-size: 15px;
-    font-weight: 600;
+    padding: 8px 14px;
+    border: none;
+    background: linear-gradient(135deg, #00994A 0%, #007846 100%);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     text-decoration: none;
-    transition: all 0.3s ease;
-    border-radius: 12px;
-    font-family: 'Poppins', inherit;
-    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
-    letter-spacing: 0.3px;
-    text-transform: uppercase;
-    font-size: 13px;
+    transition: all 0.3s cubic-bezier(.4,0,.2,1);
+    border-radius: 10px;
+    font-family: 'Inter', Arial, 'Poppins', sans-serif;
+    box-shadow: 0 2px 8px rgba(0,120,70,0.10);
+    letter-spacing: 0.15px;
+    text-transform: none;
 }
 
 .btn-primary:hover, .btn-success:hover {
-    background: linear-gradient(135deg, #5a67d8 0%, #63408a 50%, #e879f9 100%);
+    background: #005c36;
     transform: translateY(-2px);
-    box-shadow: 0 8px 30px rgba(102, 126, 234, 0.4);
-    letter-spacing: 0.4px;
+    box-shadow: 0 4px 16px rgba(0,120,70,0.18);
+    letter-spacing: 0.2px;
 }
 
 .btn-secondary {
-    background: rgba(255, 255, 255, 0.7);
-    color: #2d1b69;
-    border: 1px solid rgba(102, 126, 234, 0.3);
-    font-weight: 600;
+    background: #FFD600;
+    color: #007846;
+    border: none;
+    font-weight: 700;
 }
 
 .btn-secondary:hover {
-    background: rgba(255, 255, 255, 0.9);
+    background: #ffe666;
     transform: translateY(-2px);
-    box-shadow: 0 8px 30px rgba(102, 126, 234, 0.2);
-    color: #2d1b69;
-    letter-spacing: 0.4px;
+    box-shadow: 0 2px 8px rgba(0,120,70,0.10);
+    color: #007846;
+    letter-spacing: 0.2px;
 }
 
 .btn-primary {
-    width: 100%;
+    width: auto;
+    min-width: 100px;
+    max-width: 100%;
+    display: inline-flex;
     justify-content: center;
 }
 
@@ -510,7 +535,7 @@ body::before {
     left: 0;
     right: 0;
     height: 2px;
-    background: linear-gradient(90deg, transparent, rgba(247, 147, 251, 0.4), transparent);
+    background: linear-gradient(90deg, transparent, #FFD600 40%, #007846 60%, transparent);
 }
 
 .agent-item:hover {
@@ -529,7 +554,7 @@ body::before {
 .agent-icon {
     width: 32px;
     height: 32px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    background: linear-gradient(135deg, #007846 0%, #FFD600 100%);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     color: #ffffff;
@@ -538,7 +563,7 @@ body::before {
     justify-content: center;
     flex-shrink: 0;
     border-radius: 10px;
-    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 4px 15px rgba(0, 120, 70, 0.18);
     transition: all 0.3s ease;
 }
 
@@ -549,7 +574,7 @@ body::before {
 
 .agent-item:hover .agent-icon {
     transform: scale(1.1);
-    box-shadow: 0 6px 20px rgba(247, 147, 251, 0.4);
+    box-shadow: 0 6px 20px rgba(0, 120, 70, 0.25);
 }
 
 .agent-info {
@@ -560,14 +585,14 @@ body::before {
     font-size: 15px;
     font-weight: 600;
     margin-bottom: 3px;
-    color: #2d1b69;
+    color: #007846;
     letter-spacing: 0.3px;
     text-shadow: 0 1px 2px rgba(255, 255, 255, 0.3);
 }
 
 .agent-info p {
     font-size: 12px;
-    color: #5b4f87;
+    color: #007846;
     margin: 0;
     line-height: 1.4;
     font-weight: 400;
@@ -616,7 +641,7 @@ body::before {
     -webkit-backdrop-filter: blur(10px);
     border-radius: 3px;
     overflow: hidden;
-    box-shadow: inset 0 1px 3px rgba(102, 126, 234, 0.1);
+    box-shadow: inset 0 1px 3px rgba(0, 120, 70, 0.08);
 }
 
 .progress-bar.large {
@@ -626,11 +651,11 @@ body::before {
 
 .progress-fill {
     height: 100%;
-    background: linear-gradient(90deg, #667eea, #764ba2, #f093fb);
+    background: linear-gradient(90deg, #007846 0%, #FFD600 100%);
     width: 0%;
     transition: width 0.3s ease;
     border-radius: inherit;
-    box-shadow: 0 1px 3px rgba(247, 147, 251, 0.3);
+    box-shadow: 0 1px 3px rgba(0, 120, 70, 0.18);
 }
 
 /* Glass Progress Section */
@@ -655,12 +680,12 @@ body::before {
 
 .progress-percentage {
     font-weight: 700;
-    color: #2d1b69;
+    color: #007846;
     text-shadow: 0 1px 2px rgba(255, 255, 255, 0.3);
 }
 
 .progress-eta {
-    color: #5b4f87;
+    color: #007846;
     font-weight: 400;
     font-style: italic;
 }
@@ -711,7 +736,7 @@ body::before {
 
 .result-item i {
     font-size: 24px;
-    color: #000000;
+    color: #007846;
     animation: float 3s ease-in-out infinite;
 }
 
