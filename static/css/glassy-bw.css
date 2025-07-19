@@ -1,3 +1,39 @@
+/* Notification/Toast Popup Styling */
+.notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 15px 22px;
+  background: rgba(34, 34, 34, 0.96); /* nearly black for contrast */
+  color: #fff !important;
+  border-radius: 12px;
+  border: 1.5px solid #764ba2;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  z-index: 2000;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  max-width: 340px;
+  text-align: left;
+  opacity: 0.98;
+  transition: background 0.2s, color 0.2s;
+}
+
+.notification.info {
+  background: rgba(34, 34, 34, 0.96);
+  color: #fff !important;
+  border-color: #764ba2;
+}
+.notification.success {
+  background: rgba(46, 204, 113, 0.97);
+  color: #fff !important;
+  border-color: #27ae60;
+}
+.notification.error {
+  background: rgba(198, 40, 40, 0.97);
+  color: #fff !important;
+  border-color: #c62828;
+}
 /* ===============================================
    DIGITAL SUPERMAN - GLASSY PURPLE-PINK
    Glass Morphism with Purple-Pink Gradient Design

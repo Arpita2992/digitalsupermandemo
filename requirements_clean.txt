@@ -1,0 +1,33 @@
+# Core Flask dependencies
+Flask==3.0.3
+Werkzeug==3.0.3
+Jinja2==3.1.4
+
+# Essential utilities
+requests==2.32.3
+python-dotenv==1.0.1
+
+# File processing
+Pillow==10.4.0
+PyPDF2==3.0.1
+python-docx==1.1.2
+xmltodict==0.13.0
+
+# AI integration
+openai==1.95.1
+
+# Azure dependencies (optional)
+azure-identity==1.17.1
+azure-mgmt-resource==23.1.1
+azure-mgmt-authorization==4.0.0
+
+# Performance monitoring
+psutil==5.9.8
+
+# Security (optional for now)
+flask-limiter==3.5.0
+flask-talisman==1.1.0
+flask-wtf==1.2.1
+
+# File validation
+python-magic-bin==0.4.14

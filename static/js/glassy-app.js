@@ -375,39 +375,12 @@ class GlassyDigitalSupermanApp {
         const notification = document.createElement('div');
         notification.className = `notification ${type}`;
         notification.textContent = message;
-        
-        // Style the notification
-        notification.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 15px 20px;
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(20px);
-            border-radius: 12px;
-            border: 1px solid rgba(0, 0, 0, 0.1);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            z-index: 1000;
-            font-size: 14px;
-            font-weight: 500;
-            max-width: 300px;
-            transform: translateX(100%);
-            transition: transform 0.3s ease;
-        `;
-        
-        if (type === 'error') {
-            notification.style.background = 'rgba(255, 235, 238, 0.9)';
-            notification.style.color = '#c62828';
-            notification.style.borderColor = 'rgba(198, 40, 40, 0.2)';
-        }
-        
+        notification.style.transform = 'translateX(100%)';
         document.body.appendChild(notification);
-        
         // Animate in
         setTimeout(() => {
             notification.style.transform = 'translateX(0)';
         }, 100);
-        
         // Remove after 3 seconds
         setTimeout(() => {
             notification.style.transform = 'translateX(100%)';
